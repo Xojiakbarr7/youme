@@ -345,3 +345,17 @@ body{font-size:15px}
 .hero-robot-visual .hero-camera-canvas{filter:drop-shadow(0 20px 17px rgba(1,19,40,.20))}
 .hero-robot-visual .hero-camera-fallback{filter:drop-shadow(0 17px 12px rgba(1,17,37,.22))}
 @media(max-width:750px){.hero-robot-visual .hero-camera-stage{inset:-1% -10% 0 6%}}
+
+/* Camera v13: preserve original silhouette, no ugly black backdrop or house. */
+.hero-robot-visual .hero-building,
+.hero-robot-visual .hero-building-wall,
+.hero-robot-visual .hero-building-roof,
+.hero-robot-visual .hero-building-window{display:none!important}
+.hero-robot-visual{background:radial-gradient(ellipse at 63% 51%,rgba(42,163,255,.18),transparent 70%)}
+.hero-robot-visual .hero-camera-stage{inset:-1% -8% -2% 5%}
+.hero-robot-visual .hero-camera-canvas{filter:drop-shadow(0 20px 17px rgba(1,19,43,.23))}
+.hero-robot-visual .hero-camera-fallback{filter:drop-shadow(0 18px 15px rgba(1,19,43,.26))}
+@media(max-width:750px){
+ .hero-robot-visual .hero-camera-stage{inset:-1% -8% -1% 4%}
+ .hero-robot-visual .hero-camera-fallback{left:15%;width:79%;top:5%;height:90%}
+}

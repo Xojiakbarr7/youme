@@ -95,3 +95,46 @@ body{font-size:15px}
 .product-order:disabled{cursor:not-allowed;opacity:.63;background:#93a4bc}
 .detail-info .button:disabled{opacity:.63;cursor:not-allowed}
 @media(max-width:650px){.price-editor-hint{font-size:12px}.admin-price-values strong{font-size:12px}.product-price strong{font-size:13px;line-height:1.5}}
+
+/* YOU ME — promotional pricing, clear and responsive in product cards */
+.product-badge.sale{
+  background:#e52e42;color:#fff;border-radius:8px;
+  box-shadow:0 5px 16px rgba(186,27,51,.22);
+  padding:7px 10px;font-size:11px;font-weight:900;letter-spacing:.03em;
+  max-width:none;
+}
+.product-price-line{display:flex;flex-direction:column;align-items:stretch;gap:7px;min-height:0;margin:0 0 13px}
+.product-price{min-width:0;width:100%}
+.product-price.is-on-sale{padding:11px 12px 12px;background:#fff3f4;border:1px solid #ffdee1;border-radius:12px}
+.previous-price-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:5px 9px;margin-bottom:7px}
+.previous-price-label{font-size:10px;letter-spacing:.05em;color:#847b82;font-weight:750}
+.product-price .old-price,.detail-price-wrap .old-price{display:inline;margin:0;color:#817b86;font-size:13px;line-height:1.3;font-weight:650;text-decoration:line-through;text-decoration-thickness:1.5px}
+.discounted-price{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
+.discounted-price-label{display:inline-flex;align-items:center;font-size:11px;line-height:1.3;font-weight:900;letter-spacing:.045em;color:#bc2442}
+.product-price .discounted-price strong{
+  display:block;color:#d92341;font-size:clamp(18px,1.7vw,25px);
+  font-weight:900;line-height:1.2;letter-spacing:-.65px;overflow-wrap:anywhere;
+}
+.product-price .discounted-price strong small{font-size:.58em;color:#c52a42;white-space:nowrap;font-weight:800}
+.product-price .in-stock,.in-stock{align-self:flex-start}
+.product-price-line>.in-stock{margin-top:1px;font-size:11px}
+.product-price.without-price{background:#f3f5f9;border-radius:10px;padding:12px;font-size:13px}
+.detail-price-wrap.is-on-sale{background:#fff2f3;border:1px solid #ffd9df;border-radius:16px;padding:19px 21px;gap:10px;margin:18px 0}
+.detail-price-wrap .previous-price-label{font-size:12px}
+.detail-price-wrap .old-price{font-size:17px}
+.detail-price-wrap .discounted-price-label{font-size:13px}
+.detail-price-wrap .discounted-price strong.detail-price{font-size:clamp(28px,3vw,39px);color:#d92341;font-weight:900;line-height:1.2}
+.detail-price-wrap .discounted-price strong.detail-price small{font-size:.53em;color:#c52a42}
+.detail-sale-badge{display:inline-block;align-self:flex-start;background:#e52e42;color:white;border-radius:8px;padding:7px 10px;font-size:12px;font-weight:850}
+@media(max-width:650px){
+ .product-content{padding:12px 10px}
+ .product-price.is-on-sale{padding:9px 8px 10px;border-radius:10px}
+ .previous-price-row{gap:3px 6px;margin-bottom:7px}
+ .previous-price-label{font-size:9px}
+ .product-price .old-price{font-size:11px}
+ .discounted-price-label{font-size:10px}
+ .product-price .discounted-price strong{font-size:clamp(17px,4.3vw,21px);letter-spacing:-.7px}
+ .product-price .discounted-price strong small{font-size:10px}
+ .product-price-line>.in-stock{font-size:10px}
+ .product-badge.sale{padding:6px 8px;font-size:10px;max-width:125px}
+}

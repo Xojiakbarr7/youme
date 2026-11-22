@@ -450,3 +450,13 @@ body{font-size:15px}
 .hero-robot-panel .hero-camera-canvas{filter:drop-shadow(0 17px 14px rgba(0,15,38,.24))}
 .hero-robot-panel .hero-camera-fallback{filter:drop-shadow(0 17px 15px rgba(0,15,38,.28))}
 .hero-robot-panel .v380-demo-tag{display:none!important}
+
+/* v18: photo-faithful frontal camera + optional real 3D side rotation */
+.hero-robot-panel .hero-camera-canvas{
+  filter:drop-shadow(0 20px 15px rgba(0,14,36,.25));
+}
+.hero-robot-panel .hero-camera-stage{
+  cursor:grab;
+  touch-action:pan-y;
+}
+.hero-robot-panel .hero-camera-stage:active{cursor:grabbing}

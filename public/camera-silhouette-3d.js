@@ -156,6 +156,42 @@
       group.add(new THREE.Mesh(geo,sideMat));
     }
   }
+
+  // FRONT-FIDELITY LAYER. This is the original transparent product photograph
+  // laid directly over the physical 3D body, like a photographic front decal.
+  // Prior versions let rounded rear meshes obstruct the front camera face.
+  // Use two separate UV-cropped faceplates, so the motorized lower PTZ module
+  // can turn independently without tearing the photo at the pivot joint.
+  // Transparent pixels remain transparent. Actual side and back are still 3D.
+  function photographicFace(group,startRow,endRow,yOffset,renderOrder){
+    const top=Math.max(0,startRow),bottom=Math.min(h,endRow);
+    const partHeight=(bottom-top)*S;
+    const material=new THREE.MeshBasicMaterial({
+      map:texture,
+      transparent:true,
+      alphaTest:.045,
+      depthTest:false,
+      depthWrite:false,
+      toneMapped:false,
+      side:THREE.DoubleSide,
+      opacity:1
+    });
+    // A separate texture view avoids changing UV mapping on the curved hull.
+    const pieceTexture=texture.clone();
+    pieceTexture.offset.set(0,1-bottom/h);
+    pieceTexture.repeat.set(1,(bottom-top)/h);
+    pieceTexture.needsUpdate=true;
+    material.map=pieceTexture;
+    const plate=new THREE.Mesh(new THREE.PlaneGeometry(w*S,partHeight),material);
+    const centerWorld=py((top+bottom)*.5);
+    plate.position.set(0,centerWorld-yOffset,.89);
+    plate.renderOrder=renderOrder;
+    group.add(plate);
+    return plate;
+  }
+  const upperFront=photographicFace(upper,0,jointY,0,90);
+  const lowerFront=photographicFace(ptz,jointY,h,jointPos,91);
+
   // Upper unit includes the 3 lenses and the broad silver PTZ motor collar.
   buildPart(upper,350,jointY+10,0,topDepth,cast);
   // The lower black optical camera rotates around its real collar joint.
@@ -257,7 +293,7 @@
   }
   // Natural lens glass is already present in the original photo map.
   // Do not overlay 3D spheres or rings: those looked like protruding fake eyes.
-  let ww=0,hh=0,visible=true,queued=false,last=0,drag=false,lastX=0,yaw=.01,targetYaw=.01,pitch=0,targetPitch=0;
+  let ww=0,hh=0,visible=true,queued=false,last=0,drag=false,lastX=0,yaw=0,targetYaw=0,pitch=0,targetPitch=0;
   function resize(){
     const b=stage.getBoundingClientRect();
     const width=Math.max(2,Math.round(b.width)),height=Math.max(2,Math.round(b.height));
@@ -277,11 +313,12 @@
     const t=ms/1000;
     // Rotate enough to demonstrate the rounded side housings, without
     // turning the actual front optical photograph into a narrow billboard.
-    const wave=reduced?0:Math.sin(t*.34)*.032;
+    // Keep the authentic frontal product appearance fixed until drag.
+    const wave=0;
     yaw+=(targetYaw+wave-yaw)*.065;
     pitch+=(targetPitch-pitch)*.05;
     master.rotation.y=yaw;master.rotation.x=pitch;
-    ptz.rotation.y=reduced?0:Math.sin(t*.63)*.075;
+    ptz.rotation.y=0;
     master.position.y=reduced?-.04:Math.sin(t*.9)*.027-.04;
     renderer.render(scene,view);
     if(!reduced)requestFrame();
@@ -291,17 +328,14 @@
     drag=true;lastX=e.clientX;stage.setPointerCapture?.(e.pointerId);
   });
   stage.addEventListener('pointermove',e=>{
-    if(drag){targetYaw=Math.max(-.72,Math.min(.72,targetYaw+(e.clientX-lastX)*.005));lastX=e.clientX;}
-    else if(e.pointerType==='mouse'){
-      const b=stage.getBoundingClientRect();
-      targetYaw=Math.max(-.12,Math.min(.12,(e.clientX-b.left-b.width/2)/b.width*.22));
-      targetPitch=Math.max(-.055,Math.min(.055,-(e.clientY-b.top-b.height/2)/b.height*.10));
-    }
+    if(drag){targetYaw=Math.max(-.56,Math.min(.56,targetYaw+(e.clientX-lastX)*.0045));lastX=e.clientX;}
+    // Hover does not rotate the body: a shopper should see the correct
+    // three-eye product from the front, not a distorted oblique viewpoint.
     if(reduced)requestFrame();
   });
-  stage.addEventListener('pointerup',()=>drag=false);
-  stage.addEventListener('pointercancel',()=>drag=false);
-  stage.addEventListener('pointerleave',()=>{if(!drag){targetYaw=.01;targetPitch=0;}});
+  stage.addEventListener('pointerup',()=>{drag=false;targetYaw=0;targetPitch=0;});
+  stage.addEventListener('pointercancel',()=>{drag=false;targetYaw=0;targetPitch=0;});
+  stage.addEventListener('pointerleave',()=>{if(!drag){targetYaw=0;targetPitch=0;}});
   if('ResizeObserver'in window)new ResizeObserver(()=>{resize();requestFrame();}).observe(stage);
   if('IntersectionObserver'in window)new IntersectionObserver(entries=>{
     visible=Boolean(entries[0]?.isIntersecting);if(visible)requestFrame();

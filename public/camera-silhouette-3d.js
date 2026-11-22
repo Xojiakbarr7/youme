@@ -293,6 +293,10 @@
   }
   // Natural lens glass is already present in the original photo map.
   // Do not overlay 3D spheres or rings: those looked like protruding fake eyes.
+  // Keep the physical hull completely behind the exact product silhouette
+  // in the front view. Reveal its real 3D depth only during deliberate rotation.
+  const opticalHull=upper.children.filter(o=>o!==upperFront);
+  const rotatingHull=ptz.children.filter(o=>o!==lowerFront);
   let ww=0,hh=0,visible=true,queued=false,last=0,drag=false,lastX=0,yaw=0,targetYaw=0,pitch=0,targetPitch=0;
   function resize(){
     const b=stage.getBoundingClientRect();
@@ -319,6 +323,11 @@
     pitch+=(targetPitch-pitch)*.05;
     master.rotation.y=yaw;master.rotation.x=pitch;
     ptz.rotation.y=0;
+    // At rest show the original front only. Volumetric curved side meshes
+    // appear when the customer intentionally rotates the product.
+    const showDepth=Math.abs(yaw)>.105;
+    for(const mesh of opticalHull)mesh.visible=showDepth;
+    for(const mesh of rotatingHull)mesh.visible=showDepth;
     master.position.y=reduced?-.04:Math.sin(t*.9)*.027-.04;
     renderer.render(scene,view);
     if(!reduced)requestFrame();
@@ -341,7 +350,10 @@
     visible=Boolean(entries[0]?.isIntersecting);if(visible)requestFrame();
   },{threshold:.03}).observe(stage);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)requestFrame();});
-  resize();renderer.render(scene,view);
+  resize();
+  for(const mesh of opticalHull)mesh.visible=false;
+  for(const mesh of rotatingHull)mesh.visible=false;
+  renderer.render(scene,view);
   stage.classList.add('is-3d-ready');
   requestFrame();
  }

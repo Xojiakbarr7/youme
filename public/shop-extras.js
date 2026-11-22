@@ -22,7 +22,7 @@
     promoCurrent:'Oddiy narx',promoList:'Rejalashtirilgan aksiyalar',promoActive:'Faol',promoFuture:'Kutilmoqda',promoExpired:'Tugagan',
     promoSelect:'Mahsulotni tanlang',promoEmpty:'Hali vaqtli aksiya yo‘q.',promoInvalid:'Aksiya narxi oddiy narxdan kichik, tugash vaqti boshlanishdan keyin bo‘lishi shart.',
     promoSaved:'Aksiya saqlandi',promoRemoved:'Aksiya o‘chirildi',promoError:'Aksiyani saqlashda xatolik yuz berdi.',
-    promoTime:'Vaqt kompyuteringizning mahalliy vaqtiga mos kiritiladi.',timeLeft:'Aksiya tugashiga',ended:'Aksiya tugadi',
+    promoTime:'Vaqt kompyuteringizning mahalliy vaqtiga mos kiritiladi.',timeLeft:'Aksiya tugashiga',ended:'Aksiya tugadi',days:'kun',
     onlyPriced:'Avval mahsulotga oddiy narx kiriting.'
   };
   const ru={
@@ -43,7 +43,7 @@
     promoCurrent:'Обычная цена',promoList:'Запланированные акции',promoActive:'Активна',promoFuture:'Ожидается',promoExpired:'Завершена',
     promoSelect:'Выберите товар',promoEmpty:'Акций по расписанию пока нет.',promoInvalid:'Цена акции должна быть ниже обычной, дата окончания — позже начала.',
     promoSaved:'Акция сохранена',promoRemoved:'Акция удалена',promoError:'Не удалось сохранить акцию.',
-    promoTime:'Время вводится по часовому поясу вашего устройства.',timeLeft:'До конца акции',ended:'Акция закончилась',
+    promoTime:'Время вводится по часовому поясу вашего устройства.',timeLeft:'До конца акции',ended:'Акция закончилась',days:'дн.',
     onlyPriced:'Сначала укажите обычную цену товара.'
   };
   const T=()=>state.lang==='ru'?ru:uz;
@@ -213,7 +213,7 @@
         const seconds=Math.max(0,Math.ceil((Date.parse(el.dataset.endsAt)-now)/1000));
         if(seconds<=0){el.textContent=T().ended;updatePrices();continue;}
         const d=Math.floor(seconds/86400),h=Math.floor(seconds%86400/3600),m=Math.floor(seconds%3600/60),s=seconds%60;
-        el.textContent=T().timeLeft+': '+(d?d+' kun ':'')+[h,m,s].map(x=>String(x).padStart(2,'0')).join(':');
+        el.textContent=T().timeLeft+': '+(d?d+' '+T().days+' ':'')+[h,m,s].map(x=>String(x).padStart(2,'0')).join(':');
       }
     }
     if(grid)new MutationObserver(inject).observe(grid,{childList:true,subtree:false});

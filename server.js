@@ -225,7 +225,7 @@ function promotionActive(product,promo,now=Date.now()){
   return Number.isFinite(starts)&&Number.isFinite(ends)&&starts<=now&&now<ends;
 }
 function effectiveProduct(product,promo){
-  if(!promotionActive(product,promo))return {...product,sale_ends_at:null};
+  if(!promotionActive(product,promo))return {...product,old_price:promo?0:product.old_price,sale_ends_at:null};
   return {...product,old_price:Number(product.price),price:Number(promo.sale_price),sale_ends_at:promo.ends_at};
 }
 function productView(p,promo=null){

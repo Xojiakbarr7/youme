@@ -83,3 +83,15 @@ body{font-size:15px}
 .order-form select:disabled{background:#f2f4f8;color:#99a7ba}
 .order-form label>span{font-size:13px}
 @media(max-width:650px){.order-form select{font-size:15px;min-height:46px}.order-form label>span{font-size:13px}}
+
+/* YOU ME: explicit old/current discounted prices */
+.price-editor-hint{background:#eff6ff;border:1px solid #cfe1ff;border-radius:12px;padding:12px 15px;color:#234d8c;font-size:13px;line-height:1.65;font-weight:650}
+.admin-price-values{display:flex;flex-direction:column;gap:5px}
+.admin-price-values small{font-size:11px;color:#7d90aa}
+.admin-price-values strong{font-size:13px;color:#125cce}
+.detail-price-wrap{display:flex;align-items:flex-start;flex-direction:column;gap:6px;margin:18px 0}
+.detail-price-wrap .detail-price{margin:0}
+.product-price strong{font-size:clamp(13px,1.45vw,21px);overflow-wrap:anywhere}
+.product-order:disabled{cursor:not-allowed;opacity:.63;background:#93a4bc}
+.detail-info .button:disabled{opacity:.63;cursor:not-allowed}
+@media(max-width:650px){.price-editor-hint{font-size:12px}.admin-price-values strong{font-size:12px}.product-price strong{font-size:13px;line-height:1.5}}

@@ -228,7 +228,8 @@ function handleImage(data) {
 }
 async function validateProduct(input,existing=null) {
   const p={category_id:number(input.category_id),name_uz:clean(input.name_uz,140),description_uz:clean(input.description_uz,1000),price:number(input.price,-1),old_price:number(input.old_price,0),stock:number(input.stock,0),image_url:clean(input.image_url,1000),featured:input.featured?1:0,active:input.active===false?0:1};
-  if(!p.name_uz || p.price<0 || p.price>1_000_000_000 || p.old_price<0 || p.old_price>1_000_000_000 || p.stock<0 || p.stock>1_000_000 || !isValidUrl(p.image_url) || !(await db.prepare('SELECT id FROM categories WHERE id=?').get(p.category_id)))throw Object.assign(new Error('invalid_product'),{status:400});
+  if(p.price<=0 || p.old_price<=p.price || p.old_price>1_000_000_000)throw Object.assign(new Error('invalid_prices'),{status:400});
+  if(!p.name_uz || p.price>1_000_000_000 || p.stock<0 || p.stock>1_000_000 || !isValidUrl(p.image_url) || !(await db.prepare('SELECT id FROM categories WHERE id=?').get(p.category_id)))throw Object.assign(new Error('invalid_product'),{status:400});
   p.name_ru=existing?.name_uz===p.name_uz && existing?.name_ru ? existing.name_ru : await translateUzToRu(p.name_uz);
   p.description_ru=!p.description_uz?'':existing?.description_uz===p.description_uz && existing?.description_ru ? existing.description_ru : await translateUzToRu(p.description_uz);
   return p;
@@ -238,7 +239,7 @@ async function notifyTelegram(order) {
   if(!BOT_TOKEN || !CHAT_ID)return false;
   const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const price=n=>Number(n).toLocaleString('en-US').replaceAll(',',' ');
-  const message=[`🛒 <b>YOU ME — YANGI BUYURTMA #${order.id}</b>`,``,`📦 <b>Mahsulot:</b> ${escape(order.product_name)}`,`🔢 <b>Soni:</b> ${order.quantity}`,order.unit_price===0?`💵 <b>Narx:</b> Sotuvchi bilan kelishiladi`:`💵 <b>Jami:</b> ${price(order.total)} so‘m`,``,`👤 <b>Mijoz:</b> ${escape(order.customer_name)}`,`📞 <b>Telefon:</b> ${escape(order.phone)}`,order.extra_phone?`☎️ <b>Qo‘shimcha telefon:</b> ${escape(order.extra_phone)}`:'',`📍 <b>Viloyat:</b> ${escape(order.region)}`,`🏘 <b>Tuman/shahar:</b> ${escape(order.district)}`,order.address?`🏠 <b>Ko‘cha/uy:</b> ${escape(order.address)}`:'',order.notes?`📝 <b>Izoh:</b> ${escape(order.notes)}`:''].filter(Boolean).join('\n');
+  const message=[`🛒 <b>YOU ME — YANGI BUYURTMA #${order.id}</b>`,``,`📦 <b>Mahsulot:</b> ${escape(order.product_name)}`,`🔢 <b>Soni:</b> ${order.quantity}`,`💵 <b>Jami:</b> ${price(order.total)} so‘m`,``,`👤 <b>Mijoz:</b> ${escape(order.customer_name)}`,`📞 <b>Telefon:</b> ${escape(order.phone)}`,order.extra_phone?`☎️ <b>Qo‘shimcha telefon:</b> ${escape(order.extra_phone)}`:'',`📍 <b>Viloyat:</b> ${escape(order.region)}`,`🏘 <b>Tuman/shahar:</b> ${escape(order.district)}`,order.address?`🏠 <b>Ko‘cha/uy:</b> ${escape(order.address)}`:'',order.notes?`📝 <b>Izoh:</b> ${escape(order.notes)}`:''].filter(Boolean).join('\n');
   try{
     const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),7500);
     const response=await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:CHAT_ID,text:message,parse_mode:'HTML'}),signal:controller.signal});
@@ -274,9 +275,9 @@ async function route(req,res){
       const name=clean(v.name,90),phone=clean(v.phone,24),extraPhone=clean(v.extra_phone,24),street=clean(v.address,240),notes=clean(v.notes,500);
       const selectedRegion=locations.regions.find(r=>r.id===number(v.region_id));
       const selectedDistrict=locations.districts.find(d=>d.id===number(v.district_id)&&d.region_id===selectedRegion?.id);
-      const prod=await db.prepare('SELECT id,name_uz,price,active,stock FROM products WHERE id=?').get(id);
+      const prod=await db.prepare('SELECT id,name_uz,price,old_price,active,stock FROM products WHERE id=?').get(id);
       const digits=phone.replace(/\D/g,''),extraDigits=extraPhone.replace(/\D/g,'');
-      if(!prod||!prod.active||prod.stock<qty||qty<1||qty>20||name.length<3||
+      if(!prod||!prod.active||prod.price<=0||prod.old_price<=prod.price||prod.stock<qty||qty<1||qty>20||name.length<3||
         digits.length<9||digits.length>15||(extraPhone&&(extraDigits.length<9||extraDigits.length>15))||
         !selectedRegion||!selectedDistrict)return json(res,400,{error:'invalid_order'});
       const region=selectedRegion.uz,district=selectedDistrict.uz;

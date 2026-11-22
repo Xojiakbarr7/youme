@@ -440,3 +440,8 @@ body{font-size:15px}
 @media(max-width:750px){
  .hero-robot-panel .hero-camera-stage{inset:-1% -12% -2% 5%}
 }
+
+/* v16: transparent 3D canvas and clean genuine phone, no 'DEMO' flag. */
+.hero-robot-panel .v380-demo-tag{display:none!important}
+.hero-robot-panel .hero-camera-canvas{filter:drop-shadow(0 22px 16px rgba(2,22,43,.31))}
+.hero-robot-panel .hero-camera-stage{isolation:isolate;touch-action:pan-y}

@@ -15,9 +15,12 @@
  async function start(){
   if(attempted)return;attempted=true;
   let THREE;
-  try{THREE=await import('https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js');}
-  catch(e){try{THREE=await import('https://unpkg.com/three@0.161.0/build/three.module.js');}
-    catch(e2){console.info('Three.js unavailable; original product photo remains');return;}}
+  try{
+    THREE=await import('/vendor/three.module.js');
+  }catch(e){
+    console.warn('Local 3D engine unavailable; showing product photo',e);
+    return;
+  }
   const img=fallback||new Image();
   if(!fallback)img.src=imageUrl;
   try{await img.decode();}catch(e){console.warn('Original product image not available');return;}
@@ -42,6 +45,10 @@
   white.position.set(-3,4,5);scene.add(white);
   const cool=new THREE.DirectionalLight(0x4ba4ff,3.0);
   cool.position.set(4,3,-4);scene.add(cool);
+  const sideKey=new THREE.DirectionalLight(0xe1edff,3.2);
+  sideKey.position.set(5,1,2);scene.add(sideKey);
+  const rearRim=new THREE.DirectionalLight(0x8ecfff,2.0);
+  rearRim.position.set(-3,2,-6);scene.add(rearRim);
   const master=new THREE.Group(),upper=new THREE.Group(),ptz=new THREE.Group();
   scene.add(master);master.add(upper);master.add(ptz);
   const S=4.46/w, ox=w*.5,oy=h*.5;
@@ -246,7 +253,7 @@
   }
   // Natural lens glass is already present in the original photo map.
   // Do not overlay 3D spheres or rings: those looked like protruding fake eyes.
-  let ww=0,hh=0,visible=true,queued=false,last=0,drag=false,lastX=0,yaw=.13,targetYaw=.13,pitch=0,targetPitch=0;
+  let ww=0,hh=0,visible=true,queued=false,last=0,drag=false,lastX=0,yaw=.22,targetYaw=.22,pitch=0,targetPitch=0;
   function resize(){
     const b=stage.getBoundingClientRect();
     const width=Math.max(2,Math.round(b.width)),height=Math.max(2,Math.round(b.height));
@@ -264,7 +271,9 @@
     if(!reduced&&ms-last<30){requestFrame();return;}last=ms;
     resize();
     const t=ms/1000;
-    const wave=reduced?0:Math.sin(t*.45)*.075;
+    // Rotate enough to demonstrate the rounded side housings, without
+    // turning the actual front optical photograph into a narrow billboard.
+    const wave=reduced?0:Math.sin(t*.34)*.24;
     yaw+=(targetYaw+wave-yaw)*.065;
     pitch+=(targetPitch-pitch)*.05;
     master.rotation.y=yaw;master.rotation.x=pitch;
@@ -288,7 +297,7 @@
   });
   stage.addEventListener('pointerup',()=>drag=false);
   stage.addEventListener('pointercancel',()=>drag=false);
-  stage.addEventListener('pointerleave',()=>{if(!drag){targetYaw=.13;targetPitch=0;}});
+  stage.addEventListener('pointerleave',()=>{if(!drag){targetYaw=.22;targetPitch=0;}});
   if('ResizeObserver'in window)new ResizeObserver(()=>{resize();requestFrame();}).observe(stage);
   if('IntersectionObserver'in window)new IntersectionObserver(entries=>{
     visible=Boolean(entries[0]?.isIntersecting);if(visible)requestFrame();

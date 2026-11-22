@@ -261,6 +261,20 @@ async function route(req,res){
   const url=new URL(req.url||'/',`http://${req.headers.host||'localhost'}`);
   const p=url.pathname, method=req.method;
   try{
+    // Serve Three.js from our own deployment: third-party CDNs can be blocked,
+    // leaving customers with the fallback photo instead of the 3D model.
+    if(method==='GET' && p==='/vendor/three.module.js'){
+      const modulePath=path.join(ROOT,'node_modules','three','build','three.module.js');
+      return fs.readFile(modulePath,(err,bytes)=>{
+        if(err)return json(res,404,{error:'module_not_found'});
+        res.writeHead(200,{
+          'Content-Type':'text/javascript; charset=utf-8',
+          'X-Content-Type-Options':'nosniff',
+          'Cache-Control':'public, max-age=86400'
+        });
+        res.end(bytes);
+      });
+    }
     if(method==='GET'&&p==='/api/health')return json(res,200,{ok:true});
     if(method==='GET'&&p==='/api/config')return json(res,200,{telegram_configured:Boolean(BOT_TOKEN&&CHAT_ID),demo_mode:!PRODUCTION});
     if(method==='GET'&&p==='/api/categories')return json(res,200,{categories:await catsQuery.all()});

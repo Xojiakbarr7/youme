@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { DatabaseSync } = require('node:sqlite');
+const { translateUzToRu } = require('./translation');
 
 const ROOT = __dirname;
 const PUBLIC = path.join(ROOT, 'public');
@@ -214,11 +215,14 @@ function handleImage(data) {
   if(!valid)throw Object.assign(new Error('invalid_image'),{status:400});
   return {bytes:b,mime:m[1]};
 }
-async function validateProduct(input) {
-  const p={category_id:number(input.category_id),name_uz:clean(input.name_uz,140),name_ru:clean(input.name_ru,140),description_uz:clean(input.description_uz,1000),description_ru:clean(input.description_ru,1000),price:number(input.price,-1),old_price:number(input.old_price,0),stock:number(input.stock,0),image_url:clean(input.image_url,1000),featured:input.featured?1:0,active:input.active===false?0:1};
-  if(!p.name_uz || !p.name_ru || p.price<0 || p.price>1_000_000_000 || p.old_price<0 || p.old_price>1_000_000_000 || p.stock<0 || p.stock>1_000_000 || !isValidUrl(p.image_url) || !(await db.prepare('SELECT id FROM categories WHERE id=?').get(p.category_id)))throw Object.assign(new Error('invalid_product'),{status:400});
+async function validateProduct(input,existing=null) {
+  const p={category_id:number(input.category_id),name_uz:clean(input.name_uz,140),description_uz:clean(input.description_uz,1000),price:number(input.price,-1),old_price:number(input.old_price,0),stock:number(input.stock,0),image_url:clean(input.image_url,1000),featured:input.featured?1:0,active:input.active===false?0:1};
+  if(!p.name_uz || p.price<0 || p.price>1_000_000_000 || p.old_price<0 || p.old_price>1_000_000_000 || p.stock<0 || p.stock>1_000_000 || !isValidUrl(p.image_url) || !(await db.prepare('SELECT id FROM categories WHERE id=?').get(p.category_id)))throw Object.assign(new Error('invalid_product'),{status:400});
+  p.name_ru=existing?.name_uz===p.name_uz && existing?.name_ru ? existing.name_ru : await translateUzToRu(p.name_uz);
+  p.description_ru=!p.description_uz?'':existing?.description_uz===p.description_uz && existing?.description_ru ? existing.description_ru : await translateUzToRu(p.description_uz);
   return p;
 }
+
 async function notifyTelegram(order) {
   if(!BOT_TOKEN || !CHAT_ID)return false;
   const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -287,27 +291,29 @@ async function route(req,res){
     if(method!=='GET'&&(!originOK(req)||!csrfOK(req,s)))return json(res,403,{error:'csrf_failed'});
     if(method==='POST'&&p==='/api/admin/logout')return json(res,200,{ok:true},{'Set-Cookie':`youme_session=; Max-Age=0; ${cookieProps(req)}`});
     if(method==='GET'&&p==='/api/admin/dashboard'){
-      const stats={products:await db.prepare('SELECT COUNT(*) AS n FROM products').get().n,categories:await db.prepare('SELECT COUNT(*) AS n FROM categories').get().n,orders:await db.prepare('SELECT COUNT(*) AS n FROM orders').get().n,new_orders:await db.prepare("SELECT COUNT(*) AS n FROM orders WHERE status='new'").get().n,total_sales:await db.prepare("SELECT COALESCE(SUM(total),0) AS n FROM orders WHERE status IN ('accepted','shipped','done')").get().n};
+      const stats={products:(await db.prepare('SELECT COUNT(*) AS n FROM products').get()).n,categories:(await db.prepare('SELECT COUNT(*) AS n FROM categories').get()).n,orders:(await db.prepare('SELECT COUNT(*) AS n FROM orders').get()).n,new_orders:(await db.prepare("SELECT COUNT(*) AS n FROM orders WHERE status='new'").get()).n,total_sales:(await db.prepare("SELECT COALESCE(SUM(total),0) AS n FROM orders WHERE status IN ('accepted','shipped','done')").get()).n};
       return json(res,200,{stats});
     }
     if(method==='GET'&&p==='/api/admin/products')return json(res,200,{products:(await allProductsQuery.all()).map(productView)});
     if(method==='GET'&&p==='/api/admin/orders')return json(res,200,{orders:await db.prepare('SELECT * FROM orders ORDER BY id DESC LIMIT 500').all()});
     const categoryMatch=p.match(/^\/api\/admin\/categories(?:\/(\d+))?$/);
     if(categoryMatch){const id=categoryMatch[1]?Number(categoryMatch[1]):null;
-      if(method==='POST'&&!id){const v=await bodyJSON(req,9000),uz=clean(v.name_uz,80),ru=clean(v.name_ru,80),icon=clean(v.icon,30),color=clean(v.color,30);if(!uz||!ru)return json(res,400,{error:'invalid_category'});const r=await db.prepare('INSERT INTO categories (name_uz,name_ru,icon,color) VALUES (?,?,?,?)').run(uz,ru,icon||'camera',color||'blue');return json(res,201,{id:Number(r.lastInsertRowid)});}
-      if(method==='PUT'&&id){const v=await bodyJSON(req,9000),uz=clean(v.name_uz,80),ru=clean(v.name_ru,80),icon=clean(v.icon,30),color=clean(v.color,30);if(!uz||!ru)return json(res,400,{error:'invalid_category'});const r=await db.prepare('UPDATE categories SET name_uz=?,name_ru=?,icon=?,color=? WHERE id=?').run(uz,ru,icon||'camera',color||'blue',id);return json(res,r.changes?200:404,{ok:Boolean(r.changes)});}
+      if(method==='POST'&&!id){const v=await bodyJSON(req,9000),uz=clean(v.name_uz,80),icon=clean(v.icon,30),color=clean(v.color,30);if(!uz)return json(res,400,{error:'invalid_category'});const ru=await translateUzToRu(uz);const r=await db.prepare('INSERT INTO categories (name_uz,name_ru,icon,color) VALUES (?,?,?,?)').run(uz,ru,icon||'camera',color||'blue');return json(res,201,{id:Number(r.lastInsertRowid)});}
+      if(method==='PUT'&&id){const v=await bodyJSON(req,9000),uz=clean(v.name_uz,80),icon=clean(v.icon,30),color=clean(v.color,30);if(!uz)return json(res,400,{error:'invalid_category'});const existing=await db.prepare('SELECT name_uz,name_ru FROM categories WHERE id=?').get(id);if(!existing)return json(res,404,{error:'not_found'});const ru=existing.name_uz===uz && existing.name_ru?existing.name_ru:await translateUzToRu(uz);const r=await db.prepare('UPDATE categories SET name_uz=?,name_ru=?,icon=?,color=? WHERE id=?').run(uz,ru,icon||'camera',color||'blue',id);return json(res,r.changes?200:404,{ok:Boolean(r.changes)});}
       if(method==='DELETE'&&id){if(await db.prepare('SELECT 1 FROM products WHERE category_id=? LIMIT 1').get(id))return json(res,409,{error:'category_has_products'});const r=await db.prepare('DELETE FROM categories WHERE id=?').run(id);return json(res,r.changes?200:404,{ok:Boolean(r.changes)});}
     }
     const productMatch=p.match(/^\/api\/admin\/products(?:\/(\d+))?$/);
     if(productMatch){const id=productMatch[1]?Number(productMatch[1]):null;
       if((method==='POST'&&!id)||(method==='PUT'&&id)){
-        const v=await bodyJSON(req), data=await validateProduct(v);const im=handleImage(v.image_data);
+        const v=await bodyJSON(req), existing=id?await db.prepare('SELECT id,name_uz,name_ru,description_uz,description_ru FROM products WHERE id=?').get(id):null;
+        if(id&&!existing)return json(res,404,{error:'not_found'});
+        const data=await validateProduct(v,existing), im=handleImage(v.image_data);
         if(method==='POST'){
           const r=await db.prepare(`INSERT INTO products(category_id,name_uz,name_ru,description_uz,description_ru,price,old_price,stock,image_url,image_blob,image_mime,featured,active)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(data.category_id,data.name_uz,data.name_ru,data.description_uz,data.description_ru,data.price,data.old_price,data.stock,data.image_url,im?.bytes||null,im?.mime||'',data.featured,data.active);
           return json(res,201,{id:Number(r.lastInsertRowid)});
         }
-        const old=await db.prepare('SELECT id FROM products WHERE id=?').get(id);if(!old)return json(res,404,{error:'not_found'});
+        
         const replaceImage=Boolean(im)||v.clear_image===true;
         const query=replaceImage?`UPDATE products SET category_id=?,name_uz=?,name_ru=?,description_uz=?,description_ru=?,price=?,old_price=?,stock=?,image_url=?,featured=?,active=?,image_blob=?,image_mime=?,demo=0,updated_at=CURRENT_TIMESTAMP WHERE id=?`:`UPDATE products SET category_id=?,name_uz=?,name_ru=?,description_uz=?,description_ru=?,price=?,old_price=?,stock=?,image_url=?,featured=?,active=?,demo=0,updated_at=CURRENT_TIMESTAMP WHERE id=?`;
         const args=[data.category_id,data.name_uz,data.name_ru,data.description_uz,data.description_ru,data.price,data.old_price,data.stock,data.image_url,data.featured,data.active];

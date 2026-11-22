@@ -6,6 +6,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { DatabaseSync } = require('node:sqlite');
 const { translateUzToRu } = require('./translation');
+const locations = require('./public/locations.json');
 
 const ROOT = __dirname;
 const PUBLIC = path.join(ROOT, 'public');
@@ -119,6 +120,16 @@ CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
 CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at);
 `);
   }
+  if(DATABASE_URL){
+    await db.exec("ALTER TABLE orders ADD COLUMN IF NOT EXISTS region TEXT NOT NULL DEFAULT ''");
+    await db.exec("ALTER TABLE orders ADD COLUMN IF NOT EXISTS district TEXT NOT NULL DEFAULT ''");
+    await db.exec("ALTER TABLE orders ADD COLUMN IF NOT EXISTS extra_phone TEXT NOT NULL DEFAULT ''");
+  }else{
+    const columns=await db.prepare('PRAGMA table_info(orders)').all();
+    for(const column of ['region','district','extra_phone']){
+      if(!columns.some(c=>c.name===column))await db.exec("ALTER TABLE orders ADD COLUMN "+column+" TEXT NOT NULL DEFAULT ''");
+    }
+  }
   await seed();
   await db.exec('CREATE TABLE IF NOT EXISTS app_migrations (key TEXT PRIMARY KEY)');
   // Upgrade older YOU ME databases without modifying saved admin prices or image uploads.
@@ -227,7 +238,7 @@ async function notifyTelegram(order) {
   if(!BOT_TOKEN || !CHAT_ID)return false;
   const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const price=n=>Number(n).toLocaleString('en-US').replaceAll(',',' ');
-  const message=[`🛒 <b>YOU ME — YANGI BUYURTMA #${order.id}</b>`,``,`📦 <b>Mahsulot:</b> ${escape(order.product_name)}`,`🔢 <b>Soni:</b> ${order.quantity}`,order.unit_price===0?`💵 <b>Narx:</b> Sotuvchi bilan kelishiladi`:`💵 <b>Jami:</b> ${price(order.total)} so‘m`,``,`👤 <b>Mijoz:</b> ${escape(order.customer_name)}`,`📞 <b>Telefon:</b> ${escape(order.phone)}`,`📍 <b>Manzil:</b> ${escape(order.address)}`,order.notes?`📝 <b>Izoh:</b> ${escape(order.notes)}`:''].filter(Boolean).join('\n');
+  const message=[`🛒 <b>YOU ME — YANGI BUYURTMA #${order.id}</b>`,``,`📦 <b>Mahsulot:</b> ${escape(order.product_name)}`,`🔢 <b>Soni:</b> ${order.quantity}`,order.unit_price===0?`💵 <b>Narx:</b> Sotuvchi bilan kelishiladi`:`💵 <b>Jami:</b> ${price(order.total)} so‘m`,``,`👤 <b>Mijoz:</b> ${escape(order.customer_name)}`,`📞 <b>Telefon:</b> ${escape(order.phone)}`,order.extra_phone?`☎️ <b>Qo‘shimcha telefon:</b> ${escape(order.extra_phone)}`:'',`📍 <b>Viloyat:</b> ${escape(order.region)}`,`🏘 <b>Tuman/shahar:</b> ${escape(order.district)}`,order.address?`🏠 <b>Ko‘cha/uy:</b> ${escape(order.address)}`:'',order.notes?`📝 <b>Izoh:</b> ${escape(order.notes)}`:''].filter(Boolean).join('\n');
   try{
     const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),7500);
     const response=await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:CHAT_ID,text:message,parse_mode:'HTML'}),signal:controller.signal});
@@ -258,13 +269,21 @@ async function route(req,res){
     if(method==='POST'&&p==='/api/orders'){
       if(!originOK(req))return json(res,403,{error:'forbidden'});
       if(!allow(orderAttempts,safeIp(req),8,30*60_000))return json(res,429,{error:'too_many_requests'});
-      const v=await bodyJSON(req,15000), id=number(v.product_id),qty=number(v.quantity,1),name=clean(v.name,90),phone=clean(v.phone,24),address=clean(v.address,240),notes=clean(v.notes,500);
+      const v=await bodyJSON(req,15000);
+      const id=number(v.product_id),qty=number(v.quantity,1);
+      const name=clean(v.name,90),phone=clean(v.phone,24),extraPhone=clean(v.extra_phone,24),street=clean(v.address,240),notes=clean(v.notes,500);
+      const selectedRegion=locations.regions.find(r=>r.id===number(v.region_id));
+      const selectedDistrict=locations.districts.find(d=>d.id===number(v.district_id)&&d.region_id===selectedRegion?.id);
       const prod=await db.prepare('SELECT id,name_uz,price,active,stock FROM products WHERE id=?').get(id);
-      const digits=phone.replace(/\D/g,'');
-      if(!prod||!prod.active||prod.stock<qty||qty<1||qty>20||name.length<3||digits.length<9||digits.length>15||address.length<5)return json(res,400,{error:'invalid_order'});
+      const digits=phone.replace(/\D/g,''),extraDigits=extraPhone.replace(/\D/g,'');
+      if(!prod||!prod.active||prod.stock<qty||qty<1||qty>20||name.length<3||
+        digits.length<9||digits.length>15||(extraPhone&&(extraDigits.length<9||extraDigits.length>15))||
+        !selectedRegion||!selectedDistrict)return json(res,400,{error:'invalid_order'});
+      const region=selectedRegion.uz,district=selectedDistrict.uz;
       const total=prod.price*qty;
-      const r=await db.prepare('INSERT INTO orders (product_id,product_name,quantity,unit_price,total,customer_name,phone,address,notes) VALUES (?,?,?,?,?,?,?,?,?)').run(id,prod.name_uz,qty,prod.price,total,name,phone,address,notes);
-      const order={id:Number(r.lastInsertRowid),product_name:prod.name_uz,quantity:qty,unit_price:prod.price,total,customer_name:name,phone,address,notes};
+      const r=await db.prepare('INSERT INTO orders (product_id,product_name,quantity,unit_price,total,customer_name,phone,address,region,district,extra_phone,notes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
+        .run(id,prod.name_uz,qty,prod.price,total,name,phone,street,region,district,extraPhone,notes);
+      const order={id:Number(r.lastInsertRowid),product_name:prod.name_uz,quantity:qty,unit_price:prod.price,total,customer_name:name,phone,extra_phone:extraPhone,region,district,address:street,notes};
       const sent=await notifyTelegram(order);
       if(sent)await db.prepare('UPDATE orders SET telegram_sent=1 WHERE id=?').run(order.id);
       return json(res,201,{ok:true,order_id:order.id,telegram_sent:sent});

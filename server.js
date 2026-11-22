@@ -57,7 +57,7 @@ function createPostgresAdapter(){
 async function initializeDatabase(){
   db=DATABASE_URL?createPostgresAdapter():createSqliteAdapter();
   if(DATABASE_URL){
-    await db.exec(\`
+    await db.exec(`
 CREATE TABLE IF NOT EXISTS categories (
   id SERIAL PRIMARY KEY,
   name_uz TEXT NOT NULL, name_ru TEXT NOT NULL,
@@ -85,10 +85,10 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
 CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at);
-\`);
+`);
   } else {
     await db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;');
-    await db.exec(\`
+    await db.exec(`
 CREATE TABLE IF NOT EXISTS categories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name_uz TEXT NOT NULL, name_ru TEXT NOT NULL,
@@ -116,7 +116,7 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
 CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at);
-\`);
+`);
   }
   await seed();
   await db.exec('CREATE TABLE IF NOT EXISTS app_migrations (key TEXT PRIMARY KEY)');
@@ -156,7 +156,7 @@ async function seed(){
     [4,'Och ko‘k shishiriladigan kreslo va puf','Светло-голубое надувное кресло с пуфом','Och ko‘k rangli shishiriladigan kreslo va dumaloq puf.','Светло-голубое надувное кресло и круглый пуф.',0,0,10,'inflatable_chair.webp',1],
     [4,'To‘q ko‘k shishiriladigan kreslo va puf','Тёмно-синее надувное кресло с пуфом','To‘q ko‘k rangli shishiriladigan kreslo va dumaloq puf.','Тёмно-синее надувное кресло и круглый пуф.',0,0,10,'inflatable_chair_alt.webp',1]
   ];
-  const ps=db.prepare(\`INSERT INTO products (category_id,name_uz,name_ru,description_uz,description_ru,price,old_price,stock,image_url,featured,active,demo) VALUES (?,?,?,?,?,?,?,?,?,?,1,0)\`);
+  const ps=db.prepare(`INSERT INTO products (category_id,name_uz,name_ru,description_uz,description_ru,price,old_price,stock,image_url,featured,active,demo) VALUES (?,?,?,?,?,?,?,?,?,?,1,0)`);
   for(const x of items)await ps.run(...x.slice(0,8),'/assets/'+x[8],x[9]);
 }
 const statuses = new Set(['new','accepted','shipped','done','cancelled']);

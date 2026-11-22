@@ -234,3 +234,16 @@ body{font-size:15px}
 @media(prefers-reduced-motion:reduce){
  .hero-camera-halo,.hero-ground-ring,.hero-phone-demo,.hero-camera-fallback{animation:none!important}
 }
+
+/* Accurate camera photograph: two antennas fully visible, no toy-like simplified meshes */
+.hero-robot-visual .hero-camera-fallback{
+  object-fit:contain;
+  top:5.5%;left:15.5%;width:78%;height:88%;
+  filter:drop-shadow(0 25px 23px rgba(0,7,28,.48));
+}
+.hero-robot-visual .hero-camera-stage{inset:1% -6% 0 0}
+.hero-robot-visual .hero-3d-caption{background:rgba(4,30,68,.65)}
+@media(max-width:750px){
+ .hero-robot-visual .hero-camera-stage{inset:0 -2% 0 -2%}
+ .hero-robot-visual .hero-camera-fallback{top:5%;left:13%;width:80%;height:89%}
+}

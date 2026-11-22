@@ -359,3 +359,77 @@ body{font-size:15px}
  .hero-robot-visual .hero-camera-stage{inset:-1% -8% -1% 4%}
  .hero-robot-visual .hero-camera-fallback{left:15%;width:79%;top:5%;height:90%}
 }
+
+/* YOU ME hero v14 — inset lenses, realistic V380 Pro mobile phone */
+.hero-robot-panel .hero-phone-realistic{
+ left:-3%;bottom:7%;width:182px;height:380px;z-index:6;
+ border:2px solid #c5d0de;
+ padding:4px;border-radius:32px;
+ background:linear-gradient(105deg,#e7ebf0 0%,#667383 5%,#111927 13%,#242e3c 84%,#b6c4d5 98%);
+ box-shadow:
+  2px 1px 0 #64788d,
+  9px 0 0 -7px #0b1321,
+  21px 31px 39px rgba(0,8,30,.48),
+  inset 0 0 0 1px rgba(255,255,255,.67),
+  0 0 22px rgba(99,179,244,.14);
+ transform:perspective(1000px) rotateY(-9deg) rotateZ(-4deg);
+}
+.hero-robot-panel .phone-glass{border:2px solid #070e18;border-radius:26px;background:#0a1b30;box-shadow:inset 0 0 0 1px rgba(202,221,240,.3)}
+.hero-robot-panel .phone-glass:after{background:linear-gradient(108deg,rgba(255,255,255,.13),transparent 25%,transparent 79%,rgba(255,255,255,.04))}
+.hero-robot-panel .phone-status{height:23px;color:#f1f6fb;background:#061426;padding:0 12px}
+.hero-robot-panel .phone-device-island{background:#02060d;width:45px;height:13px;top:3px;box-shadow:inset 0 1px 2px #131e2d}
+.hero-robot-panel .v380-app-head{height:35px;background:#0a2343;color:#eef5ff;border-color:#173c65}
+.hero-robot-panel .v380-app-head b{font-size:12px}
+.hero-robot-panel .v380-back,.hero-robot-panel .v380-menu{color:#d9e8fb}
+.hero-robot-panel .v380-app-icon{background:linear-gradient(145deg,#32d7ff,#0962e2);border-radius:6px}
+.hero-robot-panel .v380-camera-name{height:25px;background:#102949;font-size:9px;padding:0 8px}
+.hero-robot-panel .v380-live-view{height:125px;background:linear-gradient(150deg,#0e3054 0%,#3e729d 50%,#153b57 100%)}
+.hero-robot-panel .v380-live-view img{filter:saturate(1.07) contrast(1.12);animation:demo-stream-pan 14s ease-in-out infinite alternate}
+.hero-robot-panel .v380-player-toolbar{height:26px;color:#d7e7f7;background:#0e2038;font-size:14px}
+.hero-robot-panel .v380-ptz-panel{height:86px;background:radial-gradient(circle at center,#182c46,#0d1a30 85%);}
+.hero-robot-panel .v380-ptz-title{color:#aac1dc;font-size:8px}
+.hero-robot-panel .v380-ptz-wheel{width:76px;height:76px;color:#e6f4ff;border-color:#3c5a7a;background:radial-gradient(circle,#536b8c 0%,#536b8c 24%,#203c5e 26%,#18314d 62%,#10243e 100%);box-shadow:inset 0 2px 5px #001029,0 2px 5px #061223}
+.hero-robot-panel .v380-up{left:33px;top:6px}
+.hero-robot-panel .v380-down{left:33px;bottom:6px}
+.hero-robot-panel .v380-left{left:7px;top:34px}
+.hero-robot-panel .v380-right{right:7px;top:34px}
+.hero-robot-panel .v380-center{left:34px;top:33px;color:#7fa4cb}
+.hero-robot-panel .v380-bottom-toolbar{height:35px;background:#0c1e34;border-color:#244361}
+.hero-robot-panel .v380-bottom-toolbar span{color:#ecf5ff}
+.hero-robot-panel .v380-bottom-toolbar b{font-size:15px}
+.hero-robot-panel .v380-bottom-toolbar small{font-size:7px}
+.hero-robot-panel .phone-home-indicator{background:#e5efff;width:51px;bottom:5px}
+.hero-robot-panel .v380-demo-tag{border-color:#75a5d5;background:#07336b;bottom:15px;right:-14px}
+@keyframes phone-device-hover{
+  0%,100%{transform:perspective(1000px) rotateY(-9deg) rotateZ(-4deg) translateY(0)}
+  50%{transform:perspective(1000px) rotateY(-7deg) rotateZ(-3deg) translateY(-6px)}
+}
+.hero-robot-panel .hero-camera-canvas{filter:drop-shadow(0 19px 14px rgba(0,13,35,.22))}
+@media(max-width:1100px){
+ .hero-robot-panel .hero-phone-realistic{width:150px;height:342px;left:-4%;bottom:8%}
+ .hero-robot-panel .v380-live-view{height:108px}
+ .hero-robot-panel .v380-ptz-panel{height:76px}
+ .hero-robot-panel .v380-ptz-wheel{transform:scale(.85)}
+ .hero-robot-panel .v380-bottom-toolbar{height:30px}
+}
+@media(max-width:750px){
+ .hero-robot-panel .hero-phone-realistic{left:1%;bottom:5%;width:119px;height:277px}
+ .hero-robot-panel .phone-status{height:19px;font-size:8px;padding:0 8px}
+ .hero-robot-panel .phone-device-island{height:10px;width:32px}
+ .hero-robot-panel .v380-app-head{height:27px}
+ .hero-robot-panel .v380-app-head b{font-size:10px}
+ .hero-robot-panel .v380-camera-name{height:21px;font-size:7px}
+ .hero-robot-panel .v380-live-view{height:73px}
+ .hero-robot-panel .v380-player-toolbar{height:20px}
+ .hero-robot-panel .v380-ptz-panel{height:52px}
+ .hero-robot-panel .v380-ptz-wheel{transform:scale(.66)}
+ .hero-robot-panel .v380-bottom-toolbar{height:24px}
+ .hero-robot-panel .v380-bottom-toolbar b{font-size:12px}
+ .hero-robot-panel .v380-bottom-toolbar small{font-size:6px}
+}
+@media(max-width:420px){
+ .hero-robot-panel .hero-phone-realistic{left:-2%;bottom:6%;width:105px;height:249px}
+ .hero-robot-panel .v380-live-view{height:66px}
+ .hero-robot-panel .v380-ptz-panel{height:42px}
+ .hero-robot-panel .v380-bottom-toolbar{height:21px}
+}

@@ -80,10 +80,10 @@
   const topDepth=(x,y)=>.26+
    bump(x,y,323,515,180,160,.09)+bump(x,y,625,523,178,165,.13)+
    bump(x,y,927,515,180,160,.09)+
-   bump(x,y,323,510,55,52,.18)+bump(x,y,625,520,60,62,.20)+
-   bump(x,y,925,510,55,52,.18)+bump(x,y,625,739,215,107,.12);
+   bump(x,y,323,510,58,57,.035)+bump(x,y,625,520,63,66,.035)+
+   bump(x,y,925,510,58,57,.035)+bump(x,y,625,739,215,107,.12);
   const bottomDepth=(x,y)=>.30+
-    bump(x,y,624,994,252,270,.20)+bump(x,y,622,949,76,76,.21);
+    bump(x,y,624,994,252,270,.14)+bump(x,y,622,949,76,76,.030);
   // The leading/front surface is CURVED THREE DIMENSIONAL geometry, not a flat plane.
   // Its transparency keeps the real camera outline; dark background never enters mesh.
   function buildPart(group,start,end,relativeY,zFn,sideMat){
@@ -155,8 +155,8 @@
   const collar=new THREE.Mesh(new THREE.CylinderGeometry(.70,.70,.40,48),cast);
   collar.position.set(0,py(744),-.50);upper.add(collar);
   const lowerBack=new THREE.Mesh(new THREE.SphereGeometry(1,38,28),graphite);
-  lowerBack.scale.set(.63,.78,.22);
-  lowerBack.position.set(0,py(1020)-jointPos,-.51);ptz.add(lowerBack);
+  lowerBack.scale.set(.55,.69,.16);
+  lowerBack.position.set(0,py(1020)-jointPos,-.58);ptz.add(lowerBack);
   // Independent lens glass, real thickness and specular highlights.
   function lens(group,xp,yp,offset,depth,r){
     const x=px(xp),y=py(yp)-offset,z=depth(xp,yp)+.032;
@@ -166,10 +166,8 @@
     crystal.scale.set(1,1,.20);
     crystal.position.set(x,y,z+.017);group.add(crystal);
   }
-  lens(upper,323,510,0,topDepth,.126);
-  lens(upper,625,520,0,topDepth,.145);
-  lens(upper,925,510,0,topDepth,.126);
-  lens(ptz,625,949,jointPos,bottomDepth,.088);
+  // Natural lens glass is already present in the original photo map.
+  // Do not overlay 3D spheres or rings: those looked like protruding fake eyes.
   let ww=0,hh=0,visible=true,queued=false,last=0,drag=false,lastX=0,yaw=.06,targetYaw=.06,pitch=0,targetPitch=0;
   function resize(){
     const b=stage.getBoundingClientRect();
@@ -188,11 +186,11 @@
     if(!reduced&&ms-last<30){requestFrame();return;}last=ms;
     resize();
     const t=ms/1000;
-    const wave=reduced?0:Math.sin(t*.45)*.06;
+    const wave=reduced?0:Math.sin(t*.45)*.075;
     yaw+=(targetYaw+wave-yaw)*.065;
     pitch+=(targetPitch-pitch)*.05;
     master.rotation.y=yaw;master.rotation.x=pitch;
-    ptz.rotation.y=reduced?0:Math.sin(t*.63)*.21;
+    ptz.rotation.y=reduced?0:Math.sin(t*.63)*.17;
     master.position.y=reduced?-.04:Math.sin(t*.9)*.027-.04;
     renderer.render(scene,view);
     if(!reduced)requestFrame();

@@ -29,9 +29,9 @@
     renderer.domElement.setAttribute('aria-hidden','true');
     stage.prepend(renderer.domElement);
     const scene=new T.Scene();
-    const view=new T.PerspectiveCamera(36,1,.1,60);
-    view.position.set(0,.28,9.0);
-    view.lookAt(0,.13,0);
+    const view=new T.PerspectiveCamera(42,1,.1,60);
+    view.position.set(0,.35,9.9);
+    view.lookAt(0,.21,0);
     scene.add(new T.HemisphereLight(0xcfe8ff,0x081021,3.4));
     const key=new T.DirectionalLight(0xd5e5ff,5.2);key.position.set(-3,5,6);scene.add(key);
     const rim=new T.DirectionalLight(0x008eff,7);rim.position.set(4,1,-3);scene.add(rim);
@@ -153,8 +153,8 @@
       vw=width;vh=height;
       renderer.setSize(vw,vh,false);
       view.aspect=vw/vh;view.updateProjectionMatrix();
-      root.scale.setScalar(vw<420?.62:vw<650?.74:vw<880?.88:1.03);
-      view.position.z=vw<420?10.4:vw<650?9.7:9.0;
+      root.scale.setScalar(vw<420?.88:vw<650?.92:vw<880?.98:1.03);
+      view.position.z=vw<420?9.65:vw<650?9.5:9.9;
       view.lookAt(0,.23,0);
     }
     function frame(ms){

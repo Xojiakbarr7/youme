@@ -234,7 +234,7 @@ function productView(p,promo=null){
 }
 function promotionTime(v){
   const s=clean(v,64);
-  if(!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$/.test(s))return null;
+  if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(s))return null;
   const d=Date.parse(s);
   return Number.isFinite(d)?new Date(d).toISOString():null;
 }

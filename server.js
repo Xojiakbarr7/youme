@@ -228,7 +228,7 @@ function handleImage(data) {
 }
 async function validateProduct(input,existing=null) {
   const p={category_id:number(input.category_id),name_uz:clean(input.name_uz,140),description_uz:clean(input.description_uz,1000),price:number(input.price,-1),old_price:number(input.old_price,0),stock:number(input.stock,0),image_url:clean(input.image_url,1000),featured:input.featured?1:0,active:input.active===false?0:1};
-  if(p.price<=0 || p.old_price<=p.price || p.old_price>1_000_000_000)throw Object.assign(new Error('invalid_prices'),{status:400});
+  if(p.price<=0 || p.old_price<0 || (p.old_price>0 && p.old_price<=p.price) || p.old_price>1_000_000_000)throw Object.assign(new Error('invalid_prices'),{status:400});
   if(!p.name_uz || p.price>1_000_000_000 || p.stock<0 || p.stock>1_000_000 || !isValidUrl(p.image_url) || !(await db.prepare('SELECT id FROM categories WHERE id=?').get(p.category_id)))throw Object.assign(new Error('invalid_product'),{status:400});
   p.name_ru=existing?.name_uz===p.name_uz && existing?.name_ru ? existing.name_ru : await translateUzToRu(p.name_uz);
   p.description_ru=!p.description_uz?'':existing?.description_uz===p.description_uz && existing?.description_ru ? existing.description_ru : await translateUzToRu(p.description_uz);
@@ -277,7 +277,7 @@ async function route(req,res){
       const selectedDistrict=locations.districts.find(d=>d.id===number(v.district_id)&&d.region_id===selectedRegion?.id);
       const prod=await db.prepare('SELECT id,name_uz,price,old_price,active,stock FROM products WHERE id=?').get(id);
       const digits=phone.replace(/\D/g,''),extraDigits=extraPhone.replace(/\D/g,'');
-      if(!prod||!prod.active||prod.price<=0||prod.old_price<=prod.price||prod.stock<qty||qty<1||qty>20||name.length<3||
+      if(!prod||!prod.active||prod.price<=0||(prod.old_price>0&&prod.old_price<=prod.price)||prod.stock<qty||qty<1||qty>20||name.length<3||
         digits.length<9||digits.length>15||(extraPhone&&(extraDigits.length<9||extraDigits.length>15))||
         !selectedRegion||!selectedDistrict)return json(res,400,{error:'invalid_order'});
       const region=selectedRegion.uz,district=selectedDistrict.uz;

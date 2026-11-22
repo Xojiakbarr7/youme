@@ -181,7 +181,7 @@
         if(p?.sale_ends_at){
           if(existing?.dataset.endsAt===p.sale_ends_at)continue;
           existing?.remove();
-          const el=document.createElement('div');el.className='ym-promo-clock';el.dataset.endsAt=p.sale_ends_at;mount.appendChild(el);
+          const el=document.createElement('div');el.className='ym-promo-clock';el.dataset.endsAt=p.sale_ends_at;mount.insertBefore(el,mount.querySelector('.in-stock'));
         }else existing?.remove();
       }
       if(detail){

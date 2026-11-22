@@ -575,3 +575,91 @@ body{font-size:15px}
  .ym-promo-item{align-items:flex-start;flex-direction:column}
  .ym-promo-actions{align-self:flex-end}
 }
+
+
+/* YOU ME catalog: align pricing, availability and order buttons in every row.
+   Product cards are flex columns; the varying height of discount boxes no
+   longer pushes the blue order button to a different vertical position. */
+.products-grid{
+  align-items:stretch;
+}
+.products-grid > .product-card{
+  display:flex;
+  flex-direction:column;
+  height:100%;
+  min-width:0;
+}
+.products-grid .product-media{
+  flex:0 0 auto;
+}
+.products-grid .product-content{
+  display:flex;
+  flex-direction:column;
+  flex:1 1 auto;
+  min-width:0;
+}
+.products-grid .product-category{
+  flex-shrink:0;
+}
+.products-grid .product-title{
+  height:auto;
+  min-height:3.1em;
+  max-height:3.1em;
+  margin-bottom:9px;
+  overflow:hidden;
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  line-clamp:2;
+}
+.products-grid .product-description{
+  height:auto;
+  min-height:3.25em;
+  max-height:3.25em;
+  margin-bottom:13px;
+  overflow:hidden;
+  display:-webkit-box;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:2;
+  line-clamp:2;
+}
+.products-grid .product-price-line{
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  align-items:stretch;
+  flex-shrink:0;
+  min-height:129px;
+  gap:8px;
+  margin-top:auto;
+  margin-bottom:13px;
+}
+.products-grid .product-price-line > .in-stock{
+  align-self:flex-start;
+  flex:0 0 auto;
+  min-height:14px;
+  margin:0;
+}
+.products-grid .product-order{
+  flex-shrink:0;
+  min-height:44px;
+  margin-top:0;
+}
+@media(max-width:650px){
+  .products-grid .product-title{
+    margin-bottom:7px;
+  }
+  .products-grid .product-description{
+    margin-bottom:9px;
+    min-height:3.3em;
+    max-height:3.3em;
+  }
+  .products-grid .product-price-line{
+    min-height:118px;
+    gap:6px;
+    margin-bottom:10px;
+  }
+  .products-grid .product-order{
+    min-height:42px;
+  }
+}

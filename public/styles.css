@@ -337,3 +337,11 @@ body{font-size:15px}
 @media(prefers-reduced-motion:reduce){
  .hero-phone-realistic,.v380-live-view img,.v380-live-indicator i{animation:none!important}
 }
+
+/* Real three-lens 3D model: no black photo backing */
+.hero-robot-visual .hero-building{opacity:.09;filter:none}
+.hero-robot-visual .hero-building-wall{background:linear-gradient(140deg,#24578b,#1464ad)}
+.hero-robot-visual .hero-camera-stage{inset:-5% -9% -3% 5%}
+.hero-robot-visual .hero-camera-canvas{filter:drop-shadow(0 20px 17px rgba(1,19,40,.20))}
+.hero-robot-visual .hero-camera-fallback{filter:drop-shadow(0 17px 12px rgba(1,17,37,.22))}
+@media(max-width:750px){.hero-robot-visual .hero-camera-stage{inset:-1% -10% 0 6%}}

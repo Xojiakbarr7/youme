@@ -69,94 +69,120 @@
       const mesh=new THREE.Mesh(new THREE.CylinderGeometry(radius,radius,length,segments),material);
       mesh.position.set(x,y,z);parent.add(mesh);return mesh;
     }
-    // Real product proportions: keep the dark moulded body INSIDE the photograph silhouette.
-    // Bulky spheres from the earlier model have been removed.
-    roundedRect(3.47,1.05,.53,.39,black,upper,0,.40,-.63);
-    roundedRect(1.24,.93,.35,.19,metal,upper,0,.42,-.56);
-    for(const x of [-1.29,1.29]){
-      const sideShell=new THREE.Mesh(new THREE.SphereGeometry(.41,32,20),black);
-      sideShell.scale.set(1.35,1.04,.88);
-      sideShell.position.set(x,.43,-.62);
-      upper.add(sideShell);
+
+    // All major optical housings, lens modules, motors, antennae are real 3D meshes.
+    // The source photograph only provides small photo-real faceplate materials.
+    const chromeMat=new THREE.MeshPhysicalMaterial({color:0x9ba9b9,metalness:.9,roughness:.18,clearcoat:.55});
+    const gunmetalMat=new THREE.MeshPhysicalMaterial({color:0x303848,metalness:.75,roughness:.27,clearcoat:.4});
+    const softBodyMat=new THREE.MeshPhysicalMaterial({color:0x141923,metalness:.42,roughness:.29,clearcoat:.35});
+    const maskMat=new THREE.MeshStandardMaterial({color:0x06080f,roughness:.55});
+    const diodeMat=new THREE.MeshStandardMaterial({color:0xffefca,emissive:0xffcf8a,emissiveIntensity:1.65});
+    const lensGlassMat=new THREE.MeshPhysicalMaterial({color:0x18458d,metalness:.45,roughness:.055,clearcoat:1});
+    const irisMat=new THREE.MeshPhysicalMaterial({color:0x010916,metalness:.24,roughness:.04,clearcoat:1});
+    function orb3(x,y,z,rx,ry,rz,m,p){
+      const o=new THREE.Mesh(new THREE.SphereGeometry(1,42,26),m);
+      o.position.set(x,y,z);o.scale.set(rx,ry,rz);p.add(o);return o;
     }
-    // Two actual antennas, aligned precisely with the product photo.
-    for(const x of [-.52,.52]){
-      cylinder(.069,1.17,black,upper,x,1.59,-.53,22);
-      cylinder(.090,.09,metal,upper,x,1.03,-.53);
-      cylinder(.073,.052,blue,upper,x,2.20,-.53);
+    function disk3(r,d,m,p,x,y,z){
+      const o=cylinder(r,d,m,p,x,y,z,60);o.rotation.x=Math.PI/2;return o;
     }
-    // Rotating PTZ body under the horizontal camera bar.
-    roundedRect(1.45,1.65,.52,.35,black,lower,0,-1.23,-.58);
-    roundedRect(1.30,1.16,.21,.23,metal,lower,0,-1.21,-.50);
-    cylinder(.60,.24,metal,upper,0,-.37,-.58);
-    cylinder(.50,.17,black,lower,0,-.43,-.58);
-    [-1,1].forEach(v=>{
-      const pivot=cylinder(.23,.25,metal,lower,v*.68,-1.22,-.57);
-      pivot.rotation.z=Math.PI/2;
-    });
-    // Photo-backed 3D surfaces. Split at the real motorized pan joint:
-    // upper optics stay stable while lower PTZ gently swivels independently.
-    const w=image.naturalWidth,h=image.naturalHeight;
-    const split=Math.round(h*.554),overlap=Math.min(13,Math.round(h*.01));
-    const imageWidth=4.55;
-    const imageHeight=imageWidth*h/w;
-    function photoPart(start,end,parent,centerY){
-      const canvas=document.createElement('canvas');
-      canvas.width=w;canvas.height=end-start;
-      const context=canvas.getContext('2d');
-      if(!context)throw Error('2D image context unavailable');
-      context.drawImage(image,0,start,w,end-start,0,0,w,end-start);
-      const texture=new THREE.CanvasTexture(canvas);
-      texture.colorSpace=THREE.SRGBColorSpace;
-      texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),8);
-      texture.needsUpdate=true;
-      const hh=imageHeight*(end-start)/h;
-      // Dense image-mapped curved geometry creates genuine visible parallax:
-      // lens bowls, side shells and lower PTZ lens have separate Z depth.
-      const geometry=new THREE.PlaneGeometry(imageWidth,hh,68,Math.max(24,Math.round(68*hh/imageWidth)));
-      const pos=geometry.attributes.position;
-      const bump=(u,v,cx,cy,rx,ry,depth)=>{
-        const dx=(u-cx)/rx,dy=(v-cy)/ry;
-        return depth*Math.exp(-3.5*(dx*dx+dy*dy));
-      };
-      for(let i=0;i<pos.count;i++){
-        const px=pos.getX(i),py=pos.getY(i);
-        const u=px/imageWidth+.5;
-        const v=(start+(end-start)*(.5-py/hh))/h;
-        let depth=0;
-        if(v>.285&&v<.554){
-          const norm=(u-.5)/.41;
-          depth+=.16*Math.sqrt(Math.max(0,1-norm*norm));
-          depth+=bump(u,v,.27,.413,.16,.14,.17);
-          depth+=bump(u,v,.5,.422,.15,.15,.23);
-          depth+=bump(u,v,.73,.413,.16,.14,.17);
-        }
-        if(v>.54&&v<.95){
-          depth+=bump(u,v,.5,.745,.26,.28,.16);
-          depth+=bump(u,v,.5,.765,.1,.09,.21);
-          depth+=bump(u,v,.5,.58,.25,.075,.12);
-        }
-        pos.setZ(i,depth);
-      }
-      geometry.computeVertexNormals();
-      const face=new THREE.Mesh(
-        geometry,
-        new THREE.MeshPhongMaterial({
-          map:texture,transparent:true,alphaTest:.065,side:THREE.DoubleSide,
-          shininess:52,specular:0x5275a2,depthWrite:false
-        })
+    function torus3(r,d,m,p,x,y,z){
+      const o=new THREE.Mesh(new THREE.TorusGeometry(r,d,9,54),m);
+      o.position.set(x,y,z);p.add(o);return o;
+    }
+    function face3(p,bounds,w,h,x,y,z){
+      const can=document.createElement('canvas');can.width=360;can.height=Math.round(360*h/w);
+      const ctx=can.getContext('2d');if(!ctx)return;
+      ctx.beginPath();
+      if(ctx.roundRect)ctx.roundRect(0,0,can.width,can.height,32);
+      else ctx.rect(0,0,can.width,can.height);
+      ctx.clip();
+      ctx.drawImage(image,...bounds,0,0,can.width,can.height);
+      const t=new THREE.CanvasTexture(can);
+      t.colorSpace=THREE.SRGBColorSpace;
+      t.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),8);
+      const mesh=new THREE.Mesh(
+       new THREE.PlaneGeometry(w,h),
+       new THREE.MeshBasicMaterial({map:t,transparent:true,alphaTest:.04,depthWrite:false})
       );
-      face.position.set(0,centerY,.29);
-      parent.add(face);
-      return face;
+      mesh.position.set(x,y,z);p.add(mesh);
     }
-    const upperHeight=imageHeight*(split+overlap)/h;
-    const lowerStart=split-overlap;
-    const lowerHeight=imageHeight*(h-lowerStart)/h;
-    photoPart(0,split+overlap,upper,(imageHeight-upperHeight)/2);
-    lower.position.y=0;
-    photoPart(lowerStart,h,lower,(imageHeight-lowerHeight)/2-imageHeight*lowerStart/h);
-    // Back housing now aligns directly with the lower photo surface; no overlapping black bulges.
+    function lens3(p,x,y,z,r){
+      disk3(r*1.24,.10,gunmetalMat,p,x,y,z);
+      disk3(r*1.02,.09,maskMat,p,x,y,z+.065);
+      torus3(r*.95,r*.045,chromeMat,p,x,y,z+.14);
+      disk3(r*.75,.062,lensGlassMat,p,x,y,z+.16);
+      disk3(r*.46,.040,irisMat,p,x,y,z+.204);
+      torus3(r*.42,r*.018,blue,p,x,y,z+.23);
+      orb3(x-r*.12,y+r*.12,z+.247,r*.12,r*.10,.012,chromeMat,p);
+    }
+    function led3(p,x,y,z,r){
+      disk3(r*1.21,.027,gunmetalMat,p,x,y,z);
+      disk3(r,.044,diodeMat,p,x,y,z+.034);
+      orb3(x-r*.2,y+r*.18,z+.072,r*.36,r*.32,r*.14,chromeMat,p);
+    }
+    // Unified silver curved upper body. No black blob behind an image plane.
+    roundedRect(4.22,1.16,.96,.41,chromeMat,upper,0,.66,-.34);
+    roundedRect(4.13,.16,.95,.075,chromeMat,upper,0,1.24,-.33);
+    roundedRect(4.13,.16,.95,.075,gunmetalMat,upper,0,.09,-.33);
+    for(const x of [-.72,.72]){
+      cylinder(.12,.18,chromeMat,upper,x,1.37,-.34,24);
+      cylinder(.091,1.49,softBodyMat,upper,x,2.22,-.34,28);
+      cylinder(.10,.09,gunmetalMat,upper,x,3.02,-.34,24);
+      orb3(x,3.09,-.34,.097,.1,.097,maskMat,upper);
+      for(let k=0;k<4;k++)cylinder(.101,.026,maskMat,upper,x,1.80+k*.15,-.34,24);
+    }
+    function optic3(x,center){
+      const y=.66,w=center?1.37:1.17,h=center?1.25:1.13;
+      if(center){
+        roundedRect(1.6,1.4,.95,.30,chromeMat,upper,0,y,-.16);
+        roundedRect(1.52,1.29,.17,.24,gunmetalMat,upper,0,y,.52);
+      }else{
+        orb3(x,y,-.19,.77,.73,.66,chromeMat,upper);
+        roundedRect(1.29,1.19,.72,.31,gunmetalMat,upper,x,y,.06);
+      }
+      roundedRect(w+.16,h+.15,.20,.28,chromeMat,upper,x,y,.58);
+      roundedRect(w+.08,h+.08,.11,.25,maskMat,upper,x,y,.70);
+      roundedRect(w,h,.068,.22,softBodyMat,upper,x,y,.78);
+      face3(upper,center?[472,390,303,269]:x<0?[211,386,232,259]:[816,386,234,259],w-.05,h-.05,x,y,.83);
+      lens3(upper,x,y,.88,center?.228:.216);
+      const n=center?10:6;
+      for(let i=0;i<n;i++){
+        let lx,ly;
+        if(center){const th=Math.PI*2*i/n+.28;lx=x+Math.cos(th)*.4;ly=y+Math.sin(th)*.42;}
+        else{lx=x+(i%3-1)*.212;ly=y+(i<3?.39:-.39);}
+        led3(upper,lx,ly,.85,center?.062:.071);
+      }
+      if(center)for(const dx of [-.61,.61])for(const dy of [-.52,.52]){
+        disk3(.036,.025,chromeMat,upper,dx,y+dy,.866);
+        roundedRect(.037,.007,.008,.003,maskMat,upper,dx,y+dy,.891);
+      }
+    }
+    optic3(-1.49,false);optic3(0,true);optic3(1.49,false);
+    // Real separated motor bearing and PTZ head.
+    cylinder(.91,.44,chromeMat,upper,0,-.20,-.27,44);
+    cylinder(.88,.07,gunmetalMat,upper,0,-.47,-.27,44);
+    cylinder(.72,.17,maskMat,upper,0,-.60,-.27,44);
+    lower.position.set(0,-.72,-.13);
+    orb3(0,-.93,-.32,.86,1.05,.69,gunmetalMat,lower);
+    roundedRect(1.66,1.79,.80,.39,softBodyMat,lower,0,-1.02,-.07);
+    roundedRect(1.46,1.56,.17,.31,chromeMat,lower,0,-1.03,.41);
+    roundedRect(1.35,1.44,.11,.26,maskMat,lower,0,-1.03,.53);
+    roundedRect(1.25,1.31,.08,.21,softBodyMat,lower,0,-1.04,.62);
+    face3(lower,[488,837,275,337],1.17,1.22,0,-1.04,.71);
+    lens3(lower,0,-.68,.77,.208);
+    for(let row=0;row<2;row++)for(let col=0;col<5;col++){
+      const x=(col-2)*.185,y=-1.35-row*.15;
+      roundedRect(.14,.12,.048,.027,chromeMat,lower,x,y,.755);
+      led3(lower,x,y,.80,.032);
+    }
+    for(const [x,y] of [[-.4,-1.73],[-.13,-1.78],[.13,-1.78],[.4,-1.73]])led3(lower,x,y,.80,.08);
+    for(const sign of [-1,1]){
+      const hub=cylinder(.29,.27,chromeMat,lower,sign*.83,-1.01,-.32,40);
+      hub.rotation.z=Math.PI/2;
+      const cap=cylinder(.25,.04,gunmetalMat,lower,sign*.99,-1.01,-.32,40);
+      cap.rotation.z=Math.PI/2;
+    }
     // Underneath the genuine product, a soft photometric showroom reflection.
     const glow=new THREE.Mesh(
       new THREE.CircleGeometry(1.85,60),
@@ -172,19 +198,19 @@
       if(sw===width&&sh===height)return;
       width=sw;height=sh;
       renderer.setSize(sw,sh,false);camera.aspect=sw/sh;camera.updateProjectionMatrix();
-      camera.position.z=sw<410?8.35:sw<670?8.15:7.9;
+      camera.position.z=sw<410?9.5:sw<670?9.35:8.85;
       camera.lookAt(0,.02,0);
-      rig.scale.setScalar(sw<410?.83:sw<670?.94:1);
+      rig.scale.setScalar(sw<410?.72:sw<670?.83:.96);
     }
     function schedule(){if(isVisible&&!document.hidden&&!scheduled){scheduled=true;requestAnimationFrame(render);}}
     function render(ms){
       scheduled=false;if(!isVisible||document.hidden)return;
       if(ms-last<30){schedule();return;}last=ms;resize();
       const tm=ms*.001;
-      const want=target+(prefersReduced?0:Math.sin(tm*.43)*.028);
+      const want=target+(prefersReduced?0:Math.sin(tm*.43)*.09);
       pointer+=(want-pointer)*.07;
       upper.rotation.y=pointer;
-      lower.rotation.y=pointer+(prefersReduced?0:Math.sin(tm*.63)*.17);
+      lower.rotation.y=pointer+(prefersReduced?0:Math.sin(tm*.63)*.23);
       upper.rotation.x=pointerY;
       lower.rotation.x=pointerY*.6;
       rig.position.y=prefersReduced?-.05:Math.sin(tm*.93)*.028-.05;
@@ -193,10 +219,10 @@
     }
     function down(ev){if(ev.pointerType==='mouse'&&ev.button!==0)return;drag=true;lastX=ev.clientX;stage.setPointerCapture?.(ev.pointerId);}
     function move(ev){
-      if(drag){target=Math.max(-.37,Math.min(.37,target+(ev.clientX-lastX)*.006));lastX=ev.clientX;}
+      if(drag){target=Math.max(-.92,Math.min(.92,target+(ev.clientX-lastX)*.007));lastX=ev.clientX;}
       else if(ev.pointerType==='mouse'){
         const b=stage.getBoundingClientRect();
-        target=Math.max(-.31,Math.min(.31,(ev.clientX-b.left-b.width/2)/b.width*.58));
+        target=Math.max(-.65,Math.min(.65,(ev.clientX-b.left-b.width/2)/b.width*1.1));
         pointerY=Math.max(-.06,Math.min(.06,-(ev.clientY-b.top-b.height/2)/b.height*.09));
       }
     }

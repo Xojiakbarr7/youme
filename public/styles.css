@@ -247,3 +247,93 @@ body{font-size:15px}
  .hero-robot-visual .hero-camera-stage{inset:0 -2% 0 -2%}
  .hero-robot-visual .hero-camera-fallback{top:5%;left:13%;width:80%;height:89%}
 }
+
+/* YOU ME V380 Pro phone showcase — realistic brushed titanium + glass device.
+   This is a local visual demonstration, NOT a connected V380 Pro stream. */
+.hero-phone-realistic{
+  position:absolute;z-index:6;left:-3%;bottom:11%;
+  width:156px;height:321px;display:block;box-sizing:border-box;overflow:visible;
+  border:2px solid #b4c7de;border-radius:29px;padding:4px;
+  background:linear-gradient(115deg,#131b28 3%,#7d93a9 14%,#101a28 26%,#47576d 88%,#a2b8ce 100%);
+  box-shadow:12px 24px 43px rgba(1,8,26,.55),inset 0 0 0 1px #eff8ff8a,3px 1px 0 #0b1a30;
+  transform:perspective(850px) rotateY(-11deg) rotateZ(-8deg);
+  animation:phone-device-hover 7s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes phone-device-hover{
+  0%,100%{transform:perspective(850px) rotateY(-11deg) rotateZ(-8deg) translateY(0)}
+  50%{transform:perspective(850px) rotateY(-8deg) rotateZ(-6deg) translateY(-8px)}
+}
+.phone-metal-button{position:absolute;z-index:2;background:linear-gradient(90deg,#b8c9da,#34495e);width:3px;left:-5px;border-radius:3px 0 0 3px}
+.phone-metal-button-top{top:72px;height:23px}.phone-metal-button-bottom{top:102px;height:35px}
+.phone-glass{
+ width:100%;height:100%;overflow:hidden;border-radius:23px;position:relative;
+ background:#f5f8fc;border:2px solid #020710;
+ box-shadow:inset 0 0 0 1px #bdcfe266,0 0 18px rgba(86,196,255,.12)
+}
+.phone-glass:after{content:"";position:absolute;inset:0;pointer-events:none;
+ background:linear-gradient(110deg,rgba(255,255,255,.18),transparent 27%,transparent 70%,rgba(255,255,255,.05));
+ z-index:15}
+.phone-status{height:23px;background:#fbfdff;display:flex;align-items:center;justify-content:space-between;color:#101b30;font-size:9px;font-weight:850;padding:0 12px;position:relative}
+.phone-device-island{position:absolute;left:50%;transform:translateX(-50%);top:4px;width:41px;height:12px;border-radius:15px;background:#080d17}
+.phone-status-icons{font-size:8px}
+.v380-app-head{height:33px;background:#fff;border-bottom:1px solid #ecf0f8;display:flex;align-items:center;gap:5px;padding:0 8px;color:#182237;font-size:10px}
+.v380-app-head b{font-size:11px;letter-spacing:-.2px}
+.v380-back{font-size:22px;line-height:1;font-weight:500;margin-right:2px;color:#495a74}
+.v380-app-icon{width:19px;height:19px;border-radius:6px;display:grid;place-items:center;font-size:14px;
+ background:linear-gradient(145deg,#2de0ff,#076cfd);color:white;font-weight:800;box-shadow:0 2px 4px #136cd344}
+.v380-menu{margin-left:auto;font-size:20px;color:#59667e;font-weight:700}
+.v380-camera-name{height:25px;display:flex;justify-content:space-between;align-items:center;gap:4px;background:#0f1c2c;padding:0 6px;color:#ecf7ff;font-size:8px;font-weight:700}
+.v380-live-indicator{background:#ec3440;border-radius:3px;padding:2px 4px;color:white;font-size:7px;font-weight:900;display:flex;align-items:center;gap:3px}
+.v380-live-indicator i{width:4px;height:4px;border-radius:50%;background:white;animation:live-led-blink 1.4s ease infinite}
+@keyframes live-led-blink{50%{opacity:.25}}
+.v380-live-view{height:102px;position:relative;overflow:hidden;background:linear-gradient(145deg,#3a6c90,#c2e4ff,#284654)}
+.v380-live-view img{width:100%;height:100%;object-fit:cover;display:block;filter:contrast(1.08) saturate(.92);transform:scale(1.13);animation:demo-stream-pan 11s ease-in-out infinite alternate}
+@keyframes demo-stream-pan{0%{transform:scale(1.13) translateX(-2%)}100%{transform:scale(1.16) translateX(2%)}}
+.v380-feed-timestamp{position:absolute;top:4px;left:5px;padding:2px 4px;background:#071b2b80;color:#fff;font-size:6px;font-weight:700;letter-spacing:.2px}
+.v380-stream-quality{position:absolute;right:5px;bottom:5px;background:#102c427d;color:#fff;padding:2px 4px;font-size:7px;font-weight:800;border-radius:3px}
+.v380-player-toolbar{height:21px;background:#101820;color:#fff;display:flex;align-items:center;justify-content:space-around;font-size:12px;letter-spacing:.2px}
+.v380-ptz-panel{height:68px;position:relative;background:linear-gradient(#f6f8fa,#fcfdff);display:flex;align-items:center;justify-content:center}
+.v380-ptz-title{position:absolute;left:7px;top:7px;color:#6d778a;font-size:7px;font-weight:700}
+.v380-ptz-wheel{width:63px;height:63px;position:relative;border:1px solid #d0d7e1;border-radius:50%;
+ background:radial-gradient(circle at center,#fff 0%,#fff 29%,#e5ecf4 30%,#f6f8fb 100%);
+ box-shadow:inset 0 1px 2px #889aab33;color:#45536b;font-size:8px}
+.v380-ptz-wheel span{position:absolute;display:grid;place-items:center}
+.v380-up{top:5px;left:27px}.v380-down{bottom:5px;left:27px}
+.v380-left{left:7px;top:28px}.v380-right{right:7px;top:28px}
+.v380-center{font-size:10px;left:28px;top:26px;color:#c1cbd5}
+.v380-bottom-toolbar{display:flex;justify-content:space-around;align-items:center;height:30px;background:white;border-top:1px solid #e7eaf2}
+.v380-bottom-toolbar span{display:flex;align-items:center;flex-direction:column;gap:0;color:#2e3648}
+.v380-bottom-toolbar b{font-size:12px;font-weight:800;line-height:14px}
+.v380-bottom-toolbar small{font-size:6px;white-space:nowrap;line-height:10px}
+.phone-home-indicator{position:absolute;bottom:5px;width:42px;height:3px;background:#1e293b;border-radius:9px;left:50%;transform:translateX(-50%)}
+.v380-demo-tag{position:absolute;z-index:2;right:-12px;bottom:11px;border:1px solid #fff9;
+ background:#083574;color:#e5f6ff;border-radius:8px;padding:4px 6px;font-size:9px;font-weight:850;
+ box-shadow:0 6px 10px #06162b66}
+.hero-robot-visual .hero-phone-realistic{left:-1.5%;bottom:10%;width:156px;height:321px}
+.hero-robot-visual .hero-camera-stage{inset:0 -12% 0 8%}
+.hero-robot-visual .hero-camera-fallback{left:19%;width:77%;top:5%;height:90%}
+@media(max-width:1100px){
+ .hero-robot-visual .hero-phone-realistic{left:-4%;bottom:10%;width:143px;height:321px}
+}
+@media(max-width:750px){
+ .hero-robot-visual .hero-phone-realistic{display:block;left:2%;bottom:4%;width:118px;height:278px;
+   transform:perspective(700px) rotateY(-10deg) rotateZ(-5deg)}
+ .hero-robot-visual .hero-camera-stage{inset:-1% -13% 0 10%}
+ .hero-robot-visual .hero-camera-fallback{left:15%;width:79%;top:5%}
+ .phone-glass{border-radius:23px}.hero-phone-realistic{border-radius:28px}
+ .v380-live-view{height:86px}.v380-ptz-panel{height:50px}
+ .v380-ptz-wheel{transform:scale(.75)}.v380-bottom-toolbar{height:26px}
+ .v380-app-head{height:28px}.v380-camera-name{height:22px}
+}
+@media(max-width:420px){
+ .hero-robot-visual .hero-phone-realistic{left:-1%;bottom:5%;width:108px;height:254px}
+ .hero-robot-visual .hero-camera-stage{inset:0 -17% 0 13%}
+ .v380-live-view{height:73px}
+ .v380-ptz-panel{height:46px}
+ .v380-bottom-toolbar{height:23px}
+ .v380-app-head{height:26px}
+}
+@media(prefers-reduced-motion:reduce){
+ .hero-phone-realistic,.v380-live-view img,.v380-live-indicator i{animation:none!important}
+}

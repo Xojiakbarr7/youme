@@ -69,31 +69,35 @@
       const mesh=new THREE.Mesh(new THREE.CylinderGeometry(radius,radius,length,segments),material);
       mesh.position.set(x,y,z);parent.add(mesh);return mesh;
     }
-    // Actual camera body volume behind the photo-textured geometry.
-    // The front photograph is authoritative for the product contours.
-    roundedRect(3.28,1.12,.65,.48,black,upper,0,-.32,-.31);
-    roundedRect(1.18,.94,.22,.21,metal,upper,0,-.32,-.25);
-    for(const side of [-1,1]){
-      const orb=new THREE.Mesh(new THREE.SphereGeometry(.53,30,22),black);
-      orb.scale.set(1.35,1,.91);
-      orb.position.set(side*1.27,-.30,-.34);
-      upper.add(orb);
-      const aerial=cylinder(.075,1.22,black,upper,side*.51,.92,-.20,20);
-      cylinder(.105,.12,metal,upper,side*.51,.32,-.20);
-      const top=cylinder(.078,.065,blue,upper,side*.51,1.55,-.20);
+    // Real product proportions: keep the dark moulded body INSIDE the photograph silhouette.
+    // Bulky spheres from the earlier model have been removed.
+    roundedRect(3.47,1.05,.53,.39,black,upper,0,.40,-.63);
+    roundedRect(1.24,.93,.35,.19,metal,upper,0,.42,-.56);
+    for(const x of [-1.29,1.29]){
+      const sideShell=new THREE.Mesh(new THREE.SphereGeometry(.41,32,20),black);
+      sideShell.scale.set(1.35,1.04,.88);
+      sideShell.position.set(x,.43,-.62);
+      upper.add(sideShell);
     }
-    roundedRect(1.52,1.72,.78,.38,black,lower,0,0,-.39);
-    roundedRect(1.35,1.28,.17,.25,metal,lower,0,-.06,-.31);
-    cylinder(.58,.22,metal,upper,0,-.96,-.25);
-    cylinder(.54,.26,black,lower,0,.85,-.30);
+    // Two actual antennas, aligned precisely with the product photo.
+    for(const x of [-.52,.52]){
+      cylinder(.069,1.17,black,upper,x,1.59,-.53,22);
+      cylinder(.090,.09,metal,upper,x,1.03,-.53);
+      cylinder(.073,.052,blue,upper,x,2.20,-.53);
+    }
+    // Rotating PTZ body under the horizontal camera bar.
+    roundedRect(1.45,1.65,.52,.35,black,lower,0,-1.23,-.58);
+    roundedRect(1.30,1.16,.21,.23,metal,lower,0,-1.21,-.50);
+    cylinder(.60,.24,metal,upper,0,-.37,-.58);
+    cylinder(.50,.17,black,lower,0,-.43,-.58);
     [-1,1].forEach(v=>{
-      const joint=cylinder(.26,.24,metal,lower,v*.77,-.10,-.3);
-      joint.rotation.z=Math.PI/2;
+      const pivot=cylinder(.23,.25,metal,lower,v*.68,-1.22,-.57);
+      pivot.rotation.z=Math.PI/2;
     });
     // Photo-backed 3D surfaces. Split at the real motorized pan joint:
     // upper optics stay stable while lower PTZ gently swivels independently.
     const w=image.naturalWidth,h=image.naturalHeight;
-    const split=Math.round(h*.656),overlap=Math.min(16,Math.round(h*.012));
+    const split=Math.round(h*.554),overlap=Math.min(13,Math.round(h*.01));
     const imageWidth=4.55;
     const imageHeight=imageWidth*h/w;
     function photoPart(start,end,parent,centerY){
@@ -107,11 +111,42 @@
       texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),8);
       texture.needsUpdate=true;
       const hh=imageHeight*(end-start)/h;
+      // Dense image-mapped curved geometry creates genuine visible parallax:
+      // lens bowls, side shells and lower PTZ lens have separate Z depth.
+      const geometry=new THREE.PlaneGeometry(imageWidth,hh,68,Math.max(24,Math.round(68*hh/imageWidth)));
+      const pos=geometry.attributes.position;
+      const bump=(u,v,cx,cy,rx,ry,depth)=>{
+        const dx=(u-cx)/rx,dy=(v-cy)/ry;
+        return depth*Math.exp(-3.5*(dx*dx+dy*dy));
+      };
+      for(let i=0;i<pos.count;i++){
+        const px=pos.getX(i),py=pos.getY(i);
+        const u=px/imageWidth+.5;
+        const v=(start+(end-start)*(.5-py/hh))/h;
+        let depth=0;
+        if(v>.285&&v<.554){
+          const norm=(u-.5)/.41;
+          depth+=.16*Math.sqrt(Math.max(0,1-norm*norm));
+          depth+=bump(u,v,.27,.413,.16,.14,.17);
+          depth+=bump(u,v,.5,.422,.15,.15,.23);
+          depth+=bump(u,v,.73,.413,.16,.14,.17);
+        }
+        if(v>.54&&v<.95){
+          depth+=bump(u,v,.5,.745,.26,.28,.16);
+          depth+=bump(u,v,.5,.765,.1,.09,.21);
+          depth+=bump(u,v,.5,.58,.25,.075,.12);
+        }
+        pos.setZ(i,depth);
+      }
+      geometry.computeVertexNormals();
       const face=new THREE.Mesh(
-        new THREE.PlaneGeometry(imageWidth,hh,4,4),
-        new THREE.MeshBasicMaterial({map:texture,transparent:true,alphaTest:.04,side:THREE.DoubleSide,depthWrite:false})
+        geometry,
+        new THREE.MeshPhongMaterial({
+          map:texture,transparent:true,alphaTest:.065,side:THREE.DoubleSide,
+          shininess:52,specular:0x5275a2,depthWrite:false
+        })
       );
-      face.position.set(0,centerY,.32);
+      face.position.set(0,centerY,.29);
       parent.add(face);
       return face;
     }
@@ -121,13 +156,7 @@
     photoPart(0,split+overlap,upper,(imageHeight-upperHeight)/2);
     lower.position.y=0;
     photoPart(lowerStart,h,lower,(imageHeight-lowerHeight)/2-imageHeight*lowerStart/h);
-    // Position actual back lower housing behind lower lens based on photo coordinates.
-    const lowerCenter=-.92;
-    lower.children.forEach(object=>{
-      if(object.isMesh&&object.material===black||object.isMesh&&object.material===metal){
-        if(object.geometry.type==='ExtrudeGeometry' && object.position.y===0)object.position.y=lowerCenter;
-      }
-    });
+    // Back housing now aligns directly with the lower photo surface; no overlapping black bulges.
     // Underneath the genuine product, a soft photometric showroom reflection.
     const glow=new THREE.Mesh(
       new THREE.CircleGeometry(1.85,60),
@@ -155,7 +184,7 @@
       const want=target+(prefersReduced?0:Math.sin(tm*.43)*.028);
       pointer+=(want-pointer)*.07;
       upper.rotation.y=pointer;
-      lower.rotation.y=pointer+(prefersReduced?0:Math.sin(tm*.63)*.085);
+      lower.rotation.y=pointer+(prefersReduced?0:Math.sin(tm*.63)*.17);
       upper.rotation.x=pointerY;
       lower.rotation.x=pointerY*.6;
       rig.position.y=prefersReduced?-.05:Math.sin(tm*.93)*.028-.05;
@@ -164,10 +193,10 @@
     }
     function down(ev){if(ev.pointerType==='mouse'&&ev.button!==0)return;drag=true;lastX=ev.clientX;stage.setPointerCapture?.(ev.pointerId);}
     function move(ev){
-      if(drag){target=Math.max(-.26,Math.min(.26,target+(ev.clientX-lastX)*.004));lastX=ev.clientX;}
+      if(drag){target=Math.max(-.37,Math.min(.37,target+(ev.clientX-lastX)*.006));lastX=ev.clientX;}
       else if(ev.pointerType==='mouse'){
         const b=stage.getBoundingClientRect();
-        target=Math.max(-.22,Math.min(.22,(ev.clientX-b.left-b.width/2)/b.width*.35));
+        target=Math.max(-.31,Math.min(.31,(ev.clientX-b.left-b.width/2)/b.width*.58));
         pointerY=Math.max(-.06,Math.min(.06,-(ev.clientY-b.top-b.height/2)/b.height*.09));
       }
     }

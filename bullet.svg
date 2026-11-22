@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="620" height="460" viewBox="0 0 620 460"><defs>
+  <linearGradient id="w" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".5" stop-color="#eef4fc"/><stop offset="1" stop-color="#c6d4e7"/></linearGradient>
+  <linearGradient id="s" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#dce8f6"/><stop offset="1" stop-color="#879dbd"/></linearGradient>
+  <linearGradient id="k" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#354a62"/><stop offset=".7" stop-color="#0d1930"/><stop offset="1" stop-color="#040e1e"/></linearGradient>
+  <radialGradient id="lens"><stop offset="0" stop-color="#061221"/><stop offset=".2" stop-color="#0e4f8b"/><stop offset=".39" stop-color="#0b2645"/><stop offset=".55" stop-color="#75b5db"/><stop offset=".68" stop-color="#0d203a"/><stop offset="1" stop-color="#02060e"/></radialGradient>
+  <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4dbbff"/><stop offset="1" stop-color="#0064bc"/></linearGradient>
+  <filter id="shadow" x="-40%" y="-40%" width="180%" height="220%"><feGaussianBlur stdDeviation="13"/></filter></defs>
+  <ellipse cx="310" cy="400" rx="190" ry="24" fill="#7594b6" opacity=".19" filter="url(#shadow)"/>
+  <g transform="translate(36,1)">
+ <path d="M370 177 L464 112 Q476 108 485 122 L486 141 L398 216" fill="url(#s)" stroke="#b5c4d7" stroke-width="4"/>
+ <rect x="456" y="101" width="65" height="76" rx="12" fill="url(#w)" stroke="#c1d1e2" stroke-width="4"/>
+ <path d="M116 187 Q131 160 173 155 L372 142 Q412 148 427 185 L400 300 Q395 318 361 321 L164 306 Q125 296 116 265Z" fill="url(#w)" stroke="#c2d0df" stroke-width="5"/>
+ <path d="M126 181 Q147 148 188 142 L371 132 Q411 139 423 169 L420 200 L126 210Z" fill="#ffffff" stroke="#dce5f0" stroke-width="4"/>
+ <ellipse cx="158" cy="238" rx="79" ry="76" fill="url(#s)"/>
+ <ellipse cx="154" cy="236" rx="68" ry="68" fill="url(#k)" stroke="#f6faff" stroke-width="8"/>
+ <circle cx="153" cy="237" r="43" fill="#060d18" stroke="#293e57" stroke-width="5"/><circle cx="153" cy="237" r="31" fill="url(#lens)"/>
+ <circle cx="146" cy="228" r="8" fill="#9cdefe" opacity=".5"/>
+ <g fill="#a3b7cc"><circle cx="102" cy="191" r="6"/><circle cx="104" cy="281" r="6"/><circle cx="208" cy="190" r="6"/><circle cx="209" cy="282" r="6"/></g>
+ <path d="M244 304 L244 330 L349 332 L351 316" fill="url(#w)"/><circle cx="342" cy="230" r="5" fill="#2fa0ee"/></g></svg>

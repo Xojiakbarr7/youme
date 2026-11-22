@@ -1,0 +1,8 @@
+{
+  "name": "youme-security-shop",
+  "version": "2.0.0",
+  "private": true,
+  "description": "YOU ME — bilingual direct-order security camera store with admin and Telegram alerts",
+  "engines": {"node": ">=22.13.0"},
+  "scripts": {"start": "node server.js", "dev": "node --watch server.js"}
+}

@@ -2,9 +2,9 @@ services:
   - type: web
     name: youme-security-shop
     runtime: node
-    plan: starter
-    buildCommand: "npm install --omit=dev"
-    startCommand: "npm start"
+    plan: free
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
@@ -19,9 +19,5 @@ services:
         sync: false
       - key: TELEGRAM_CHAT_ID
         sync: false
-      - key: DATA_DIR
-        value: /var/data
-    disk:
-      name: youme-data
-      mountPath: /var/data
-      sizeGB: 1
+      - key: DATABASE_URL
+        sync: false

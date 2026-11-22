@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="620" height="460" viewBox="0 0 620 460"><defs>
+  <linearGradient id="w" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".5" stop-color="#eef4fc"/><stop offset="1" stop-color="#c6d4e7"/></linearGradient>
+  <linearGradient id="s" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#dce8f6"/><stop offset="1" stop-color="#879dbd"/></linearGradient>
+  <linearGradient id="k" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#354a62"/><stop offset=".7" stop-color="#0d1930"/><stop offset="1" stop-color="#040e1e"/></linearGradient>
+  <radialGradient id="lens"><stop offset="0" stop-color="#061221"/><stop offset=".2" stop-color="#0e4f8b"/><stop offset=".39" stop-color="#0b2645"/><stop offset=".55" stop-color="#75b5db"/><stop offset=".68" stop-color="#0d203a"/><stop offset="1" stop-color="#02060e"/></radialGradient>
+  <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4dbbff"/><stop offset="1" stop-color="#0064bc"/></linearGradient>
+  <filter id="shadow" x="-40%" y="-40%" width="180%" height="220%"><feGaussianBlur stdDeviation="13"/></filter></defs>
+  <ellipse cx="310" cy="400" rx="190" ry="24" fill="#7594b6" opacity=".19" filter="url(#shadow)"/>
+  <g transform="translate(0,0)">
+ <path d="M274 76 H348 L345 149 H277Z" fill="url(#s)" stroke="#a6b9cd" stroke-width="4"/>
+ <path d="M278 80 H344 M280 95 H342 M278 111 H344 M279 127 H343" stroke="#91a6ba" stroke-width="5"/>
+ <ellipse cx="310" cy="238" rx="108" ry="125" fill="url(#w)" stroke="#ccdae8" stroke-width="6"/>
+ <path d="M241 191 Q310 145 381 191 L382 246 Q373 316 310 325 Q245 319 239 246Z" fill="url(#k)"/>
+ <circle cx="310" cy="247" r="54" fill="#081422" stroke="#5b728a" stroke-width="6"/><circle cx="310" cy="247" r="37" fill="url(#lens)"/>
+ <path d="M248 177 Q310 140 370 175" stroke="#fff" stroke-width="12" fill="none" opacity=".8"/>
+ <circle cx="310" cy="334" r="6" fill="#0db3e8"/></g></svg>

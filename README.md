@@ -96,3 +96,10 @@ Ijtimoiy havolalar foydalanuvchi yuborgan URLlardan alohida ajratildi, ortiqcha 
 6. Admin panel `/admin` orqali mahsulotlar narxlarini va ombordagi qoldiqlarni kiriting.
 
 **Eslatma:** GitHub’ga kodni joylash saytni avtomatik internetga chiqarish degani emas. Saytni ishga tushirish uchun Render kabi server kerak.
+
+
+## Neon PostgreSQL (doimiy bepul baza)
+
+Render Free servisdagi mahalliy SQLite ma'lumotlari qayta deployda yo'qolishi mumkin. Shuning uchun Neon Postgres ulanishi qo'shildi. Neon hisobidan connection URL oling va uni faqat Render Environment'da `DATABASE_URL` qiymati sifatida saqlang. Maxfiy URLni GitHub'ga kiritmang. `DATABASE_URL` bo'lsa server Postgres, bo'lmasa SQLite ishlatadi. `/api/health` endpointida `storage: postgres` bo'lishini tekshiring. Eski SQLite buyurtmalari avtomatik Neon'ga ko'chmaydi.
+
+Eslatma: GitHub'ga fayllar `public/` va `public/assets/` joylashuviga mos ravishda yuklanishi kerak. Render'ning SQLite rejimi faqat sinov uchun.

@@ -1,5 +1,5 @@
 'use strict';
-/** YOU ME Online Shop — zero-dependency Node.js 22+ server. */
+/** YOU ME Online Shop — Node.js 22+ server with persistent Neon PostgreSQL. */
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -9,7 +9,9 @@ const { DatabaseSync } = require('node:sqlite');
 const ROOT = __dirname;
 const PUBLIC = path.join(ROOT, 'public');
 const PORT = Number(process.env.PORT || 3000);
+ 
 const DATA_DIR = path.resolve(process.env.DATA_DIR || path.join(ROOT, 'data'));
+const DATABASE_URL = process.env.DATABASE_URL || '';
 const PRODUCTION = process.env.NODE_ENV === 'production';
 if (PRODUCTION && (!process.env.ADMIN_PASSWORD || !process.env.SESSION_SECRET)) {
   throw new Error('Production requires ADMIN_PASSWORD and SESSION_SECRET environment variables.');
@@ -19,10 +21,74 @@ const ADMIN_PASS = process.env.ADMIN_PASSWORD || 'YouMeDemo!2026'; // Local demo
 const SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID || '';
-fs.mkdirSync(DATA_DIR, { recursive: true });
-const db = new DatabaseSync(path.join(DATA_DIR, 'youme.sqlite'));
-db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;');
-db.exec(`
+let db, catsQuery, publicProductsQuery, allProductsQuery;
+function createSqliteAdapter(){
+  fs.mkdirSync(DATA_DIR,{recursive:true});
+  const local=new DatabaseSync(path.join(DATA_DIR,'youme.sqlite'));
+  return {
+    exec: async sql=>{local.exec(sql);},
+    prepare: sql=>{
+      const st=local.prepare(sql);
+      return {get: async(...a)=>st.get(...a), all: async(...a)=>st.all(...a), run: async(...a)=>st.run(...a)};
+    }
+  };
+}
+function createPostgresAdapter(){
+  const {Pool,types}=require('pg');
+  types.setTypeParser(20,value=>Number(value));
+  const pool=new Pool({connectionString:DATABASE_URL,max:5,idleTimeoutMillis:15000,connectionTimeoutMillis:12000});
+  return {
+    exec: async sql=>{await pool.query(sql);},
+    prepare: sql=>{
+      let i=0;
+      const q=sql.replace(/\?/g,()=>'$'+(++i));
+      return {
+        get: async(...a)=>(await pool.query(q,a)).rows[0],
+        all: async(...a)=>(await pool.query(q,a)).rows,
+        run: async(...a)=>{
+          const query=/^\s*INSERT\b/i.test(q)&&!/\bRETURNING\b/i.test(q)?q+' RETURNING *':q;
+          const r=await pool.query(query,a);
+          return {changes:r.rowCount,lastInsertRowid:r.rows[0]?.id??0};
+        }
+      };
+    }
+  };
+}
+async function initializeDatabase(){
+  db=DATABASE_URL?createPostgresAdapter():createSqliteAdapter();
+  if(DATABASE_URL){
+    await db.exec(\`
+CREATE TABLE IF NOT EXISTS categories (
+  id SERIAL PRIMARY KEY,
+  name_uz TEXT NOT NULL, name_ru TEXT NOT NULL,
+  icon TEXT NOT NULL DEFAULT 'camera', color TEXT NOT NULL DEFAULT 'blue',
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS products (
+  id SERIAL PRIMARY KEY,
+  category_id INTEGER NOT NULL REFERENCES categories(id),
+  name_uz TEXT NOT NULL, name_ru TEXT NOT NULL,
+  description_uz TEXT NOT NULL DEFAULT '', description_ru TEXT NOT NULL DEFAULT '',
+  price INTEGER NOT NULL, old_price INTEGER NOT NULL DEFAULT 0, stock INTEGER NOT NULL DEFAULT 0,
+  image_url TEXT NOT NULL DEFAULT '', image_blob BYTEA, image_mime TEXT NOT NULL DEFAULT '',
+  featured INTEGER NOT NULL DEFAULT 0, active INTEGER NOT NULL DEFAULT 1, demo INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE IF NOT EXISTS orders (
+  id SERIAL PRIMARY KEY,
+  product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
+  product_name TEXT NOT NULL, quantity INTEGER NOT NULL,
+  unit_price INTEGER NOT NULL, total INTEGER NOT NULL,
+  customer_name TEXT NOT NULL, phone TEXT NOT NULL, address TEXT NOT NULL,
+  notes TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'new',
+  telegram_sent INTEGER NOT NULL DEFAULT 0, created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
+CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at);
+\`);
+  } else {
+    await db.exec('PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;');
+    await db.exec(\`
 CREATE TABLE IF NOT EXISTS categories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name_uz TEXT NOT NULL, name_ru TEXT NOT NULL,
@@ -50,9 +116,27 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
 CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at);
-`);
-function seed() {
-  if (db.prepare('SELECT COUNT(*) AS n FROM categories').get().n) return;
+\`);
+  }
+  await seed();
+  await db.exec('CREATE TABLE IF NOT EXISTS app_migrations (key TEXT PRIMARY KEY)');
+  // Upgrade older YOU ME databases without modifying saved admin prices or image uploads.
+// All older /assets/ paths now point to the new cleaned studio photos.
+if (!await db.prepare("SELECT key FROM app_migrations WHERE key='catalog_studio_2026_11'").get()) {
+  const chairCat = await db.prepare("SELECT id FROM categories WHERE name_uz='Shishiriladigan kreslolar' LIMIT 1").get();
+  if (chairCat && !await db.prepare("SELECT id FROM products WHERE name_uz='To‘q ko‘k shishiriladigan kreslo va puf' LIMIT 1").get()) {
+    await db.prepare(`INSERT INTO products(category_id,name_uz,name_ru,description_uz,description_ru,price,old_price,stock,image_url,featured,active,demo)
+      VALUES (?,?,?,?,?,?,?,?,?,1,1,0)`).run(chairCat.id,'To‘q ko‘k shishiriladigan kreslo va puf','Тёмно-синее надувное кресло с пуфом','To‘q ko‘k rangli shishiriladigan kreslo va dumaloq puf.','Тёмно-синее надувное кресло и круглый пуф.',0,0,10,'/assets/inflatable_chair_alt.webp');
+  }
+  await db.prepare("INSERT INTO app_migrations(key) VALUES ('catalog_studio_2026_11')").run();
+}
+
+  catsQuery=db.prepare('SELECT * FROM categories ORDER BY id');
+  publicProductsQuery=db.prepare('SELECT id, category_id, name_uz, name_ru, description_uz, description_ru, price, old_price, stock, image_url, image_blob IS NOT NULL as has_blob, featured, active, demo, updated_at FROM products WHERE active=1 ORDER BY featured DESC, id DESC');
+  allProductsQuery=db.prepare('SELECT id, category_id, name_uz, name_ru, description_uz, description_ru, price, old_price, stock, image_url, image_blob IS NOT NULL as has_blob, featured, active, demo, updated_at FROM products ORDER BY id DESC');
+}
+async function seed(){
+  if((await db.prepare('SELECT COUNT(*) AS n FROM categories').get()).n)return;
   const cats = [
     ['Kuzatuv kameralari', 'Камеры видеонаблюдения', 'outdoor', 'blue'],
     ['Quyosh panelli kameralar', 'Камеры с солнечной панелью', 'solar', 'sand'],
@@ -60,9 +144,7 @@ function seed() {
     ['Shishiriladigan kreslolar', 'Надувные кресла', 'chair', 'lilac']
   ];
   const catStmt=db.prepare('INSERT INTO categories (name_uz,name_ru,icon,color) VALUES (?,?,?,?)');
-  for(const c of cats) catStmt.run(...c);
-  // Price 0 means price is not yet provided; client can request a quote.
-  // Stock=10 is a sample availability setting until administrator sets actual stock.
+  for(const c of cats)await catStmt.run(...c);
   const items=[
     [2,'Quyosh panelli ko‘p linzali kamera','Многолинзовая камера с солнечной панелью','Quyosh paneli bilan taqdim etilgan kuzatuv kamerasi. Aniq xususiyatlarni sotuvchidan so‘rang.','Камера наблюдения с солнечной панелью. Точные характеристики уточняйте у продавца.',0,0,10,'solar_four_lens.webp',1],
     [1,'YOU ME ko‘p linzali kamera','Многолинзовая камера YOU ME','Bir nechta obyektiv va tashqi antennalarga ega kamera. Texnik imkoniyatlarini sotuvchidan aniqlang.','Камера с несколькими объективами и наружными антеннами. Характеристики уточняйте у продавца.',0,0,10,'youme_promo_camera.webp',1],
@@ -74,25 +156,9 @@ function seed() {
     [4,'Och ko‘k shishiriladigan kreslo va puf','Светло-голубое надувное кресло с пуфом','Och ko‘k rangli shishiriladigan kreslo va dumaloq puf.','Светло-голубое надувное кресло и круглый пуф.',0,0,10,'inflatable_chair.webp',1],
     [4,'To‘q ko‘k shishiriladigan kreslo va puf','Тёмно-синее надувное кресло с пуфом','To‘q ko‘k rangli shishiriladigan kreslo va dumaloq puf.','Тёмно-синее надувное кресло и круглый пуф.',0,0,10,'inflatable_chair_alt.webp',1]
   ];
-  const ps=db.prepare(`INSERT INTO products (category_id,name_uz,name_ru,description_uz,description_ru,price,old_price,stock,image_url,featured,active,demo) VALUES (?,?,?,?,?,?,?,?,?,?,1,0)`);
-  for(const x of items) ps.run(...x.slice(0,8), '/assets/'+x[8], x[9]);
+  const ps=db.prepare(\`INSERT INTO products (category_id,name_uz,name_ru,description_uz,description_ru,price,old_price,stock,image_url,featured,active,demo) VALUES (?,?,?,?,?,?,?,?,?,?,1,0)\`);
+  for(const x of items)await ps.run(...x.slice(0,8),'/assets/'+x[8],x[9]);
 }
-
-seed();
-// Upgrade older YOU ME databases without modifying saved admin prices or image uploads.
-// All older /assets/ paths now point to the new cleaned studio photos.
-db.exec('CREATE TABLE IF NOT EXISTS app_migrations (key TEXT PRIMARY KEY)');
-if (!db.prepare("SELECT key FROM app_migrations WHERE key='catalog_studio_2026_11'").get()) {
-  const chairCat = db.prepare("SELECT id FROM categories WHERE name_uz='Shishiriladigan kreslolar' LIMIT 1").get();
-  if (chairCat && !db.prepare("SELECT id FROM products WHERE name_uz='To‘q ko‘k shishiriladigan kreslo va puf' LIMIT 1").get()) {
-    db.prepare(`INSERT INTO products(category_id,name_uz,name_ru,description_uz,description_ru,price,old_price,stock,image_url,featured,active,demo)
-      VALUES (?,?,?,?,?,?,?,?,?,1,1,0)`).run(chairCat.id,'To‘q ko‘k shishiriladigan kreslo va puf','Тёмно-синее надувное кресло с пуфом','To‘q ko‘k rangli shishiriladigan kreslo va dumaloq puf.','Тёмно-синее надувное кресло и круглый пуф.',0,0,10,'/assets/inflatable_chair_alt.webp');
-  }
-  db.prepare("INSERT INTO app_migrations(key) VALUES ('catalog_studio_2026_11')").run();
-}
-const catsQuery = db.prepare('SELECT * FROM categories ORDER BY id');
-const publicProductsQuery = db.prepare('SELECT id, category_id, name_uz, name_ru, description_uz, description_ru, price, old_price, stock, image_url, image_blob IS NOT NULL as has_blob, featured, active, demo, updated_at FROM products WHERE active=1 ORDER BY featured DESC, id DESC');
-const allProductsQuery = db.prepare('SELECT id, category_id, name_uz, name_ru, description_uz, description_ru, price, old_price, stock, image_url, image_blob IS NOT NULL as has_blob, featured, active, demo, updated_at FROM products ORDER BY id DESC');
 const statuses = new Set(['new','accepted','shipped','done','cancelled']);
 const types = {'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.webp':'image/webp','.jpg':'image/jpeg','.jpeg':'image/jpeg','.ico':'image/x-icon','.json':'application/json; charset=utf-8'};
 const loginAttempts = new Map();
@@ -148,9 +214,9 @@ function handleImage(data) {
   if(!valid)throw Object.assign(new Error('invalid_image'),{status:400});
   return {bytes:b,mime:m[1]};
 }
-function validateProduct(input) {
+async function validateProduct(input) {
   const p={category_id:number(input.category_id),name_uz:clean(input.name_uz,140),name_ru:clean(input.name_ru,140),description_uz:clean(input.description_uz,1000),description_ru:clean(input.description_ru,1000),price:number(input.price,-1),old_price:number(input.old_price,0),stock:number(input.stock,0),image_url:clean(input.image_url,1000),featured:input.featured?1:0,active:input.active===false?0:1};
-  if(!p.name_uz || !p.name_ru || p.price<0 || p.price>1_000_000_000 || p.old_price<0 || p.old_price>1_000_000_000 || p.stock<0 || p.stock>1_000_000 || !isValidUrl(p.image_url) || !db.prepare('SELECT id FROM categories WHERE id=?').get(p.category_id))throw Object.assign(new Error('invalid_product'),{status:400});
+  if(!p.name_uz || !p.name_ru || p.price<0 || p.price>1_000_000_000 || p.old_price<0 || p.old_price>1_000_000_000 || p.stock<0 || p.stock>1_000_000 || !isValidUrl(p.image_url) || !(await db.prepare('SELECT id FROM categories WHERE id=?').get(p.category_id)))throw Object.assign(new Error('invalid_product'),{status:400});
   return p;
 }
 async function notifyTelegram(order) {
@@ -181,22 +247,22 @@ async function route(req,res){
   try{
     if(method==='GET'&&p==='/api/health')return json(res,200,{ok:true});
     if(method==='GET'&&p==='/api/config')return json(res,200,{telegram_configured:Boolean(BOT_TOKEN&&CHAT_ID),demo_mode:!PRODUCTION});
-    if(method==='GET'&&p==='/api/categories')return json(res,200,{categories:catsQuery.all()});
-    if(method==='GET'&&p==='/api/products')return json(res,200,{products:publicProductsQuery.all().map(productView)});
+    if(method==='GET'&&p==='/api/categories')return json(res,200,{categories:await catsQuery.all()});
+    if(method==='GET'&&p==='/api/products')return json(res,200,{products:(await publicProductsQuery.all()).map(productView)});
     const img=p.match(/^\/api\/products\/(\d+)\/image$/);
-    if(method==='GET'&&img){const x=db.prepare('SELECT image_blob,image_mime FROM products WHERE id=?').get(Number(img[1]));if(!x||!x.image_blob)return json(res,404,{error:'not_found'});res.writeHead(200,{'Content-Type':x.image_mime,'Cache-Control':'public, max-age=86400','X-Content-Type-Options':'nosniff'});return res.end(x.image_blob);}
+    if(method==='GET'&&img){const x=await db.prepare('SELECT image_blob,image_mime FROM products WHERE id=?').get(Number(img[1]));if(!x||!x.image_blob)return json(res,404,{error:'not_found'});res.writeHead(200,{'Content-Type':x.image_mime,'Cache-Control':'public, max-age=86400','X-Content-Type-Options':'nosniff'});return res.end(x.image_blob);}
     if(method==='POST'&&p==='/api/orders'){
       if(!originOK(req))return json(res,403,{error:'forbidden'});
       if(!allow(orderAttempts,safeIp(req),8,30*60_000))return json(res,429,{error:'too_many_requests'});
       const v=await bodyJSON(req,15000), id=number(v.product_id),qty=number(v.quantity,1),name=clean(v.name,90),phone=clean(v.phone,24),address=clean(v.address,240),notes=clean(v.notes,500);
-      const prod=db.prepare('SELECT id,name_uz,price,active,stock FROM products WHERE id=?').get(id);
+      const prod=await db.prepare('SELECT id,name_uz,price,active,stock FROM products WHERE id=?').get(id);
       const digits=phone.replace(/\D/g,'');
       if(!prod||!prod.active||prod.stock<qty||qty<1||qty>20||name.length<3||digits.length<9||digits.length>15||address.length<5)return json(res,400,{error:'invalid_order'});
       const total=prod.price*qty;
-      const r=db.prepare('INSERT INTO orders (product_id,product_name,quantity,unit_price,total,customer_name,phone,address,notes) VALUES (?,?,?,?,?,?,?,?,?)').run(id,prod.name_uz,qty,prod.price,total,name,phone,address,notes);
+      const r=await db.prepare('INSERT INTO orders (product_id,product_name,quantity,unit_price,total,customer_name,phone,address,notes) VALUES (?,?,?,?,?,?,?,?,?)').run(id,prod.name_uz,qty,prod.price,total,name,phone,address,notes);
       const order={id:Number(r.lastInsertRowid),product_name:prod.name_uz,quantity:qty,unit_price:prod.price,total,customer_name:name,phone,address,notes};
       const sent=await notifyTelegram(order);
-      if(sent)db.prepare('UPDATE orders SET telegram_sent=1 WHERE id=?').run(order.id);
+      if(sent)await db.prepare('UPDATE orders SET telegram_sent=1 WHERE id=?').run(order.id);
       return json(res,201,{ok:true,order_id:order.id,telegram_sent:sent});
     }
     if(method==='POST'&&p==='/api/admin/login'){
@@ -221,42 +287,42 @@ async function route(req,res){
     if(method!=='GET'&&(!originOK(req)||!csrfOK(req,s)))return json(res,403,{error:'csrf_failed'});
     if(method==='POST'&&p==='/api/admin/logout')return json(res,200,{ok:true},{'Set-Cookie':`youme_session=; Max-Age=0; ${cookieProps(req)}`});
     if(method==='GET'&&p==='/api/admin/dashboard'){
-      const stats={products:db.prepare('SELECT COUNT(*) AS n FROM products').get().n,categories:db.prepare('SELECT COUNT(*) AS n FROM categories').get().n,orders:db.prepare('SELECT COUNT(*) AS n FROM orders').get().n,new_orders:db.prepare("SELECT COUNT(*) AS n FROM orders WHERE status='new'").get().n,total_sales:db.prepare("SELECT COALESCE(SUM(total),0) AS n FROM orders WHERE status IN ('accepted','shipped','done')").get().n};
+      const stats={products:await db.prepare('SELECT COUNT(*) AS n FROM products').get().n,categories:await db.prepare('SELECT COUNT(*) AS n FROM categories').get().n,orders:await db.prepare('SELECT COUNT(*) AS n FROM orders').get().n,new_orders:await db.prepare("SELECT COUNT(*) AS n FROM orders WHERE status='new'").get().n,total_sales:await db.prepare("SELECT COALESCE(SUM(total),0) AS n FROM orders WHERE status IN ('accepted','shipped','done')").get().n};
       return json(res,200,{stats});
     }
-    if(method==='GET'&&p==='/api/admin/products')return json(res,200,{products:allProductsQuery.all().map(productView)});
-    if(method==='GET'&&p==='/api/admin/orders')return json(res,200,{orders:db.prepare('SELECT * FROM orders ORDER BY id DESC LIMIT 500').all()});
+    if(method==='GET'&&p==='/api/admin/products')return json(res,200,{products:(await allProductsQuery.all()).map(productView)});
+    if(method==='GET'&&p==='/api/admin/orders')return json(res,200,{orders:await db.prepare('SELECT * FROM orders ORDER BY id DESC LIMIT 500').all()});
     const categoryMatch=p.match(/^\/api\/admin\/categories(?:\/(\d+))?$/);
     if(categoryMatch){const id=categoryMatch[1]?Number(categoryMatch[1]):null;
-      if(method==='POST'&&!id){const v=await bodyJSON(req,9000),uz=clean(v.name_uz,80),ru=clean(v.name_ru,80),icon=clean(v.icon,30),color=clean(v.color,30);if(!uz||!ru)return json(res,400,{error:'invalid_category'});const r=db.prepare('INSERT INTO categories (name_uz,name_ru,icon,color) VALUES (?,?,?,?)').run(uz,ru,icon||'camera',color||'blue');return json(res,201,{id:Number(r.lastInsertRowid)});}
-      if(method==='PUT'&&id){const v=await bodyJSON(req,9000),uz=clean(v.name_uz,80),ru=clean(v.name_ru,80),icon=clean(v.icon,30),color=clean(v.color,30);if(!uz||!ru)return json(res,400,{error:'invalid_category'});const r=db.prepare('UPDATE categories SET name_uz=?,name_ru=?,icon=?,color=? WHERE id=?').run(uz,ru,icon||'camera',color||'blue',id);return json(res,r.changes?200:404,{ok:Boolean(r.changes)});}
-      if(method==='DELETE'&&id){if(db.prepare('SELECT 1 FROM products WHERE category_id=? LIMIT 1').get(id))return json(res,409,{error:'category_has_products'});const r=db.prepare('DELETE FROM categories WHERE id=?').run(id);return json(res,r.changes?200:404,{ok:Boolean(r.changes)});}
+      if(method==='POST'&&!id){const v=await bodyJSON(req,9000),uz=clean(v.name_uz,80),ru=clean(v.name_ru,80),icon=clean(v.icon,30),color=clean(v.color,30);if(!uz||!ru)return json(res,400,{error:'invalid_category'});const r=await db.prepare('INSERT INTO categories (name_uz,name_ru,icon,color) VALUES (?,?,?,?)').run(uz,ru,icon||'camera',color||'blue');return json(res,201,{id:Number(r.lastInsertRowid)});}
+      if(method==='PUT'&&id){const v=await bodyJSON(req,9000),uz=clean(v.name_uz,80),ru=clean(v.name_ru,80),icon=clean(v.icon,30),color=clean(v.color,30);if(!uz||!ru)return json(res,400,{error:'invalid_category'});const r=await db.prepare('UPDATE categories SET name_uz=?,name_ru=?,icon=?,color=? WHERE id=?').run(uz,ru,icon||'camera',color||'blue',id);return json(res,r.changes?200:404,{ok:Boolean(r.changes)});}
+      if(method==='DELETE'&&id){if(await db.prepare('SELECT 1 FROM products WHERE category_id=? LIMIT 1').get(id))return json(res,409,{error:'category_has_products'});const r=await db.prepare('DELETE FROM categories WHERE id=?').run(id);return json(res,r.changes?200:404,{ok:Boolean(r.changes)});}
     }
     const productMatch=p.match(/^\/api\/admin\/products(?:\/(\d+))?$/);
     if(productMatch){const id=productMatch[1]?Number(productMatch[1]):null;
       if((method==='POST'&&!id)||(method==='PUT'&&id)){
-        const v=await bodyJSON(req), data=validateProduct(v);const im=handleImage(v.image_data);
+        const v=await bodyJSON(req), data=await validateProduct(v);const im=handleImage(v.image_data);
         if(method==='POST'){
-          const r=db.prepare(`INSERT INTO products(category_id,name_uz,name_ru,description_uz,description_ru,price,old_price,stock,image_url,image_blob,image_mime,featured,active)
+          const r=await db.prepare(`INSERT INTO products(category_id,name_uz,name_ru,description_uz,description_ru,price,old_price,stock,image_url,image_blob,image_mime,featured,active)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(data.category_id,data.name_uz,data.name_ru,data.description_uz,data.description_ru,data.price,data.old_price,data.stock,data.image_url,im?.bytes||null,im?.mime||'',data.featured,data.active);
           return json(res,201,{id:Number(r.lastInsertRowid)});
         }
-        const old=db.prepare('SELECT id FROM products WHERE id=?').get(id);if(!old)return json(res,404,{error:'not_found'});
+        const old=await db.prepare('SELECT id FROM products WHERE id=?').get(id);if(!old)return json(res,404,{error:'not_found'});
         const replaceImage=Boolean(im)||v.clear_image===true;
         const query=replaceImage?`UPDATE products SET category_id=?,name_uz=?,name_ru=?,description_uz=?,description_ru=?,price=?,old_price=?,stock=?,image_url=?,featured=?,active=?,image_blob=?,image_mime=?,demo=0,updated_at=CURRENT_TIMESTAMP WHERE id=?`:`UPDATE products SET category_id=?,name_uz=?,name_ru=?,description_uz=?,description_ru=?,price=?,old_price=?,stock=?,image_url=?,featured=?,active=?,demo=0,updated_at=CURRENT_TIMESTAMP WHERE id=?`;
         const args=[data.category_id,data.name_uz,data.name_ru,data.description_uz,data.description_ru,data.price,data.old_price,data.stock,data.image_url,data.featured,data.active];
         if(replaceImage)args.push(im?.bytes||null,im?.mime||'');args.push(id);
-        db.prepare(query).run(...args);return json(res,200,{ok:true});
+        await db.prepare(query).run(...args);return json(res,200,{ok:true});
       }
-      if(method==='DELETE'&&id){const r=db.prepare('DELETE FROM products WHERE id=?').run(id);return json(res,r.changes?200:404,{ok:Boolean(r.changes)});}
+      if(method==='DELETE'&&id){const r=await db.prepare('DELETE FROM products WHERE id=?').run(id);return json(res,r.changes?200:404,{ok:Boolean(r.changes)});}
     }
     const orderMatch=p.match(/^\/api\/admin\/orders\/(\d+)$/);
     if(orderMatch&&method==='PATCH'){
       const v=await bodyJSON(req,10000),st=clean(v.status,30);
       if(!statuses.has(st))return json(res,400,{error:'invalid_status'});
-      const r=db.prepare('UPDATE orders SET status=? WHERE id=?').run(st,Number(orderMatch[1]));return json(res,r.changes?200:404,{ok:Boolean(r.changes)});
+      const r=await db.prepare('UPDATE orders SET status=? WHERE id=?').run(st,Number(orderMatch[1]));return json(res,r.changes?200:404,{ok:Boolean(r.changes)});
     }
     return json(res,404,{error:'not_found'});
   }catch(e){const status=e.status||500;console.error('HTTP error:',e.message);return json(res,status,{error:status===500?'server_error':e.message});}
 }
-http.createServer(route).listen(PORT,'0.0.0.0',()=>console.log(`YOU ME server listening on http://localhost:${PORT}`));
+initializeDatabase().then(()=>{http.createServer(route).listen(PORT,'0.0.0.0',()=>console.log(`YOU ME server listening on http://localhost:${PORT} (${DATABASE_URL?'Postgres':'SQLite'})`));}).catch(e=>{console.error('Database initialization failed:',e.message);process.exitCode=1;});

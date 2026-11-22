@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="620" height="460" viewBox="0 0 620 460"><defs>
+  <linearGradient id="w" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".5" stop-color="#eef4fc"/><stop offset="1" stop-color="#c6d4e7"/></linearGradient>
+  <linearGradient id="s" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#dce8f6"/><stop offset="1" stop-color="#879dbd"/></linearGradient>
+  <linearGradient id="k" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#354a62"/><stop offset=".7" stop-color="#0d1930"/><stop offset="1" stop-color="#040e1e"/></linearGradient>
+  <radialGradient id="lens"><stop offset="0" stop-color="#061221"/><stop offset=".2" stop-color="#0e4f8b"/><stop offset=".39" stop-color="#0b2645"/><stop offset=".55" stop-color="#75b5db"/><stop offset=".68" stop-color="#0d203a"/><stop offset="1" stop-color="#02060e"/></radialGradient>
+  <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4dbbff"/><stop offset="1" stop-color="#0064bc"/></linearGradient>
+  <filter id="shadow" x="-40%" y="-40%" width="180%" height="220%"><feGaussianBlur stdDeviation="13"/></filter></defs>
+  <ellipse cx="310" cy="400" rx="190" ry="24" fill="#7594b6" opacity=".19" filter="url(#shadow)"/>
+  <g transform="translate(0,-6)">
+ <ellipse cx="310" cy="160" rx="150" ry="63" fill="url(#w)" stroke="#c8d9e9" stroke-width="5"/>
+ <path d="M159 158 L159 203 Q170 247 307 250 Q446 245 461 203 L461 160" fill="url(#s)" stroke="#bacada" stroke-width="5"/>
+ <path d="M197 211 Q180 327 308 364 Q431 334 419 211 Q411 184 308 182 Q206 185 197 211Z" fill="url(#k)" stroke="#dae8f4" stroke-width="7"/>
+ <path d="M213 218 Q243 179 310 183 Q385 182 405 221" stroke="#71869b" stroke-width="7" fill="none" opacity=".6"/>
+ <circle cx="308" cy="272" r="62" fill="#0b1628" stroke="#405469" stroke-width="7"/><circle cx="308" cy="272" r="43" fill="url(#lens)"/>
+ <path d="M246 329 Q306 372 368 326" stroke="#6e8195" stroke-width="6" fill="none"/>
+ <circle cx="222" cy="219" r="7" fill="#c7d7e6"/><circle cx="395" cy="219" r="7" fill="#c7d7e6"/></g></svg>

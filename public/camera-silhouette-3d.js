@@ -84,13 +84,16 @@
    return a*Math.exp(-2.5*(dx*dx+dy*dy));
   };
   // Exact silhouette + convex head bulges; actual product LEDs preserved in photo map.
-  const topDepth=(x,y)=>.26+
-   bump(x,y,323,515,180,160,.09)+bump(x,y,625,523,178,165,.13)+
-   bump(x,y,927,515,180,160,.09)+
-   bump(x,y,323,510,58,57,.035)+bump(x,y,625,520,63,66,.035)+
-   bump(x,y,925,510,58,57,.035)+bump(x,y,625,739,215,107,.12);
-  const bottomDepth=(x,y)=>.30+
-    bump(x,y,624,994,252,270,.14)+bump(x,y,622,949,76,76,.025);
+  // Keep the three original lens faces optically flush: protrusions from
+  // the former depth-map made the front look like the wrong product.
+  // Only a faint convexity is needed to read as dimensional in profile.
+  const topDepth=(x,y)=>.265+
+    bump(x,y,323,515,180,160,.018)+bump(x,y,625,523,178,165,.020)+
+    bump(x,y,927,515,180,160,.018)+
+    bump(x,y,323,510,58,57,.005)+bump(x,y,625,520,63,66,.005)+
+    bump(x,y,925,510,58,57,.005)+bump(x,y,625,739,215,107,.012);
+  const bottomDepth=(x,y)=>.270+
+    bump(x,y,624,994,252,270,.025)+bump(x,y,622,949,76,76,.006);
   // The leading/front surface is CURVED THREE DIMENSIONAL geometry, not a flat plane.
   // Its transparency keeps the real camera outline; dark background never enters mesh.
   function buildPart(group,start,end,relativeY,zFn,sideMat){
@@ -119,11 +122,11 @@
     const quad=(a,b,c,d)=>wall.push(...a,...b,...c,...b,...d,...c);
     let prev=null;
     const step=6,layers=10;
-    const rearZ=group===upper?-1.18:-1.07;
+    const rearZ=group===upper?-.93:-.83;
     function sidePoint(x,y,t,left){
       const front=px(x),outward=left?-1:1;
-      const recess=(left?1:-1)*.17*t;
-      const convex=outward*.085*Math.sin(Math.PI*t);
+      const recess=(left?1:-1)*.13*t;
+      const convex=outward*.065*Math.sin(Math.PI*t);
       return [
         front+recess+convex,
         py(y)-relativeY,
@@ -195,18 +198,19 @@
   }
   const headY=py(522);
   // The silver upper tubular chassis flows into black spherical end-pods.
-  ellipsoid(upper,0,headY,-.65,1.43,.54,.75,edgeMetal);
+  ellipsoid(upper,0,headY,-.62,1.31,.49,.55,edgeMetal);
   for(const sx of [-1,1]){
     const x=sx*1.12;
-    ellipsoid(upper,x,headY,-.69,.61,.54,.77,polished);
-    ellipsoid(upper,x,headY,-.45,.51,.47,.49,molded);
+    // Rounded side pod sits BEHIND the original optical face.
+    ellipsoid(upper,x,headY,-.67,.55,.49,.59,polished);
+    ellipsoid(upper,x,headY,-.48,.46,.42,.32,molded);
     // Thin metallic seam behind, never an extra protruding front lens.
-    ring(upper,x,headY,-.10,.465,.027,edgeMetal);
+    ring(upper,x,headY,-.20,.414,.019,edgeMetal);
     // Small inset seam at upper rear junction.
-    const sideSeam=ellipsoid(upper,x,headY,-1.26,.47,.43,.12,seam);
+    const sideSeam=ellipsoid(upper,x,headY,-1.20,.39,.37,.10,seam);
   }
   // Smooth centre body and real cylindrical silver motor collar.
-  ellipsoid(upper,0,headY,-.56,.73,.50,.70,edgeMetal);
+  ellipsoid(upper,0,headY,-.64,.68,.45,.48,edgeMetal);
   const swivelY=py(745);
   const collar=new THREE.Mesh(
     new THREE.CylinderGeometry(.80,.82,.41,64),
@@ -220,25 +224,25 @@
   }
   // Body of the black lower PTZ head, rounded deeply toward its rear.
   const sideY=py(1015)-jointPos;
-  ellipsoid(ptz,0,sideY,-.62,.69,.84,.75,molded);
+  ellipsoid(ptz,0,sideY,-.57,.64,.77,.55,molded);
   for(const sx of [-1,1]){
-    ellipsoid(ptz,sx*.55,sideY,-.52,.31,.60,.56,polished);
+    ellipsoid(ptz,sx*.52,sideY,-.55,.26,.52,.40,polished);
     // Customer photo shows a large round disk on BOTH sides of lower PTZ.
-    roundSide(ptz,sx*.73,sideY,-.40,.37,.18,molded,sx);
-    roundSide(ptz,sx*.85,sideY,-.40,.305,.04,edgeMetal,sx);
-    roundSide(ptz,sx*.88,sideY,-.40,.258,.052,molded,sx);
-    roundSide(ptz,sx*.913,sideY,-.40,.13,.025,seam,sx);
+    roundSide(ptz,sx*.69,sideY,-.51,.31,.16,molded,sx);
+    roundSide(ptz,sx*.785,sideY,-.51,.25,.03,edgeMetal,sx);
+    roundSide(ptz,sx*.815,sideY,-.51,.205,.042,molded,sx);
+    roundSide(ptz,sx*.85,sideY,-.51,.11,.024,seam,sx);
   }
   // The real camera has a rear articulated wall bracket.
   // Keep the structure strictly behind the optical housing.
   const arm=new THREE.Mesh(new THREE.BoxGeometry(.24,.20,.69),edgeMetal);
-  arm.position.set(0,headY,-1.42);upper.add(arm);
+  arm.position.set(0,headY,-1.23);upper.add(arm);
   const mount=new THREE.Mesh(new THREE.BoxGeometry(.62,.79,.12),polished);
-  mount.position.set(0,headY,-1.78);upper.add(mount);
+  mount.position.set(0,headY,-1.59);upper.add(mount);
   const screwHole=new THREE.MeshStandardMaterial({color:0x070a10,roughness:.65});
   for(const dy of [-.25,.25]){
     const bolt=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,.025,24),screwHole);
-    bolt.position.set(0,headY+dy,-1.70);bolt.rotation.x=Math.PI/2;upper.add(bolt);
+    bolt.position.set(0,headY+dy,-1.51);bolt.rotation.x=Math.PI/2;upper.add(bolt);
   }
   // Only geometry and plain materials are derived from the side reference:
   // its IMEI, QR label and account credentials are not uploaded or reproduced.
@@ -253,7 +257,7 @@
   }
   // Natural lens glass is already present in the original photo map.
   // Do not overlay 3D spheres or rings: those looked like protruding fake eyes.
-  let ww=0,hh=0,visible=true,queued=false,last=0,drag=false,lastX=0,yaw=.22,targetYaw=.22,pitch=0,targetPitch=0;
+  let ww=0,hh=0,visible=true,queued=false,last=0,drag=false,lastX=0,yaw=.01,targetYaw=.01,pitch=0,targetPitch=0;
   function resize(){
     const b=stage.getBoundingClientRect();
     const width=Math.max(2,Math.round(b.width)),height=Math.max(2,Math.round(b.height));
@@ -273,11 +277,11 @@
     const t=ms/1000;
     // Rotate enough to demonstrate the rounded side housings, without
     // turning the actual front optical photograph into a narrow billboard.
-    const wave=reduced?0:Math.sin(t*.34)*.24;
+    const wave=reduced?0:Math.sin(t*.34)*.032;
     yaw+=(targetYaw+wave-yaw)*.065;
     pitch+=(targetPitch-pitch)*.05;
     master.rotation.y=yaw;master.rotation.x=pitch;
-    ptz.rotation.y=reduced?0:Math.sin(t*.63)*.17;
+    ptz.rotation.y=reduced?0:Math.sin(t*.63)*.075;
     master.position.y=reduced?-.04:Math.sin(t*.9)*.027-.04;
     renderer.render(scene,view);
     if(!reduced)requestFrame();
@@ -287,17 +291,17 @@
     drag=true;lastX=e.clientX;stage.setPointerCapture?.(e.pointerId);
   });
   stage.addEventListener('pointermove',e=>{
-    if(drag){targetYaw=Math.max(-1.03,Math.min(1.03,targetYaw+(e.clientX-lastX)*.006));lastX=e.clientX;}
+    if(drag){targetYaw=Math.max(-.72,Math.min(.72,targetYaw+(e.clientX-lastX)*.005));lastX=e.clientX;}
     else if(e.pointerType==='mouse'){
       const b=stage.getBoundingClientRect();
-      targetYaw=Math.max(-.58,Math.min(.58,(e.clientX-b.left-b.width/2)/b.width*1.12));
+      targetYaw=Math.max(-.12,Math.min(.12,(e.clientX-b.left-b.width/2)/b.width*.22));
       targetPitch=Math.max(-.055,Math.min(.055,-(e.clientY-b.top-b.height/2)/b.height*.10));
     }
     if(reduced)requestFrame();
   });
   stage.addEventListener('pointerup',()=>drag=false);
   stage.addEventListener('pointercancel',()=>drag=false);
-  stage.addEventListener('pointerleave',()=>{if(!drag){targetYaw=.22;targetPitch=0;}});
+  stage.addEventListener('pointerleave',()=>{if(!drag){targetYaw=.01;targetPitch=0;}});
   if('ResizeObserver'in window)new ResizeObserver(()=>{resize();requestFrame();}).observe(stage);
   if('IntersectionObserver'in window)new IntersectionObserver(entries=>{
     visible=Boolean(entries[0]?.isIntersecting);if(visible)requestFrame();

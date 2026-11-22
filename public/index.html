@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link href="/styles.css?v=20261122-prices7" rel="stylesheet" />
+  <link href="/styles.css?v=20261122-3d8" rel="stylesheet" />
 </head>
 <body>
 <svg aria-hidden="true" class="svg-sprite" xmlns="http://www.w3.org/2000/svg">
@@ -68,16 +68,38 @@
     <div class="mobile-menu" id="mobileMenu" hidden><a href="#home" data-i18n="navHome">Bosh sahifa</a><a href="#categories" data-i18n="navCategories">Kategoriyalar</a><a href="#catalog" data-i18n="navCatalog">Katalog</a><a href="#about" data-i18n="navAbout">Biz haqimizda</a><a href="/admin" data-i18n="admin">Admin panel</a></div>
   </header>
   <main id="home">
-    <section class="hero-section"><div class="container"><div class="hero-panel">
+    <section class="hero-section"><div class="container"><div class="hero-panel hero-robot-panel">
       <div class="hero-orb hero-orb-one"></div><div class="hero-orb hero-orb-two"></div>
-      <div class="hero-left"><div class="hero-mini"><span class="green-live"></span><span data-i18n="heroTag">YANGI AVLOD XAVFSIZLIGI</span><svg class="icon"><use href="#i-spark"/></svg></div>
-        <h1><span data-i18n="heroTitle1">Xavfsizlik</span><br><span class="gradient-text" data-i18n="heroTitle2">yangi nigohda.</span></h1>
-        <p data-i18n="heroDescription">Kuzatuv kameralari, shishiriladigan matraslar va qulay kreslolar. Siz uchun saralangan mahsulotlar.</p>
-        <div class="hero-buttons"><a href="#catalog" class="button button-white"><span data-i18n="seeProducts">Mahsulotlarni ko‘rish</span><svg class="icon"><use href="#i-arrow"/></svg></a><a href="#how" class="button button-glass"><span class="play-round">▶</span><span data-i18n="howItWorks">Qanday ishlaydi?</span></a></div>
-        <div class="hero-proof"><div class="proof-avatars"><div><svg class="icon"><use href="#i-shield"/></svg></div><div><svg class="icon"><use href="#i-wifi"/></svg></div><div><svg class="icon"><use href="#i-moon"/></svg></div></div><div><strong>SMART. SAFE. SIMPLE.</strong><small data-i18n="heroProof">Doim nazoratda, har joyda.</small></div></div>
+      <div class="hero-left">
+        <div class="hero-mini"><span class="green-live"></span><span data-i18n="heroTag">YOU ME · SMART SECURITY</span><svg class="icon"><use href="#i-spark"/></svg></div>
+        <h1><span data-i18n="heroTitle1">3 ko‘zli robot</span><br><span class="gradient-text" data-i18n="heroTitle2">kuzatuv kamerasi.</span></h1>
+        <p data-i18n="heroDescription">Uyingiz, do‘koningiz va ofisingizni V380 Pro ilovasi orqali istalgan joydan kuzating.</p>
+        <div class="hero-buttons">
+          <a href="#catalog" class="button button-white"><span data-i18n="seeProducts">Mahsulotlarni ko‘rish</span><svg class="icon"><use href="#i-arrow"/></svg></a>
+          <a href="#how" class="button button-glass"><svg class="icon"><use href="#i-shield"/></svg><span data-i18n="howItWorks">Qanday ishlaydi?</span></a>
+        </div>
+        <div class="hero-smart-chips" aria-label="Kamera imkoniyatlari">
+          <div class="hero-smart-chip"><svg class="icon"><use href="#i-camera"/></svg><span data-i18n="heroFeat1">3 ta kamera ko‘zi</span></div>
+          <div class="hero-smart-chip"><svg class="icon"><use href="#i-wifi"/></svg><span data-i18n="heroFeat2">Wi-Fi ulanish</span></div>
+          <div class="hero-smart-chip"><svg class="icon"><use href="#i-phone"/></svg><span>V380 Pro</span></div>
+        </div>
       </div>
-      <div class="hero-visual"><div class="radar-circle radar-1"></div><div class="radar-circle radar-2"></div><div class="radar-circle radar-3"></div><div class="visual-glow"></div><img class="hero-camera" src="/assets/camera_dual_ptz.webp" alt="YOU ME kuzatuv kamerasi"/><div class="floating-card floating-top"><div class="floating-icon blue"><svg class="icon"><use href="#i-wifi"/></svg></div><span><b>Smart Wi-Fi</b><small data-i18n="remoteControl">Masofadan boshqaruv</small></span></div><div class="floating-card floating-bottom"><div class="floating-icon purple"><svg class="icon"><use href="#i-moon"/></svg></div><span><b>24/7</b><small data-i18n="nightVision">Tungi kuzatuv</small></span></div></div>
-      <div class="hero-index">YOU ME / 2026 <span>●●○</span></div>
+      <div class="hero-visual hero-robot-visual">
+        <div class="hero-building" aria-hidden="true"><div class="hero-building-roof"></div><div class="hero-building-wall"></div><div class="hero-building-window hero-win-one"></div><div class="hero-building-window hero-win-two"></div></div>
+        <div class="hero-camera-halo" aria-hidden="true"></div>
+        <div class="hero-ground-ring" aria-hidden="true"></div>
+        <div class="hero-ground-ring ring-two" aria-hidden="true"></div>
+        <div class="hero-phone-demo" aria-hidden="true">
+          <div class="hero-phone-camera"></div>
+          <div class="hero-phone-head"><b>V380 Pro</b><span>● LIVE</span></div>
+          <div class="hero-phone-view"><div class="hero-phone-sky"></div><div class="hero-phone-house"><i></i><i></i></div><div class="hero-phone-lawn"></div></div>
+          <div class="hero-phone-control"><span>◉</span><span>▣</span><span>⚙</span></div>
+        </div>
+        <div id="camera3dStage" class="hero-camera-stage" role="img" aria-label="Ikki antennali, uchta yuqori linzali va aylanuvchi pastki kamerali interaktiv 3D kuzatuv kamerasi">
+          <img src="/assets/camera_dual_ptz.webp" class="hero-camera-fallback" alt="YOU ME uch ko‘zli robot kamera" loading="eager">
+        </div>
+        <div class="hero-3d-caption" aria-hidden="true"><span class="hero-live-dot"></span><span data-i18n="heroDrag">3D kamera · Sichqoncha bilan aylantiring</span></div>
+      </div>
     </div></div></section>
     <section class="perks"><div class="container perks-grid"><div class="perk"><div class="perk-icon"><svg class="icon"><use href="#i-shield"/></svg></div><div><strong data-i18n="perk1">Ishonchli xavfsizlik</strong><small data-i18n="perk1sub">Har bir lahza nazoratda</small></div></div><div class="perk"><div class="perk-icon"><svg class="icon"><use href="#i-truck"/></svg></div><div><strong data-i18n="perk2">Qulay yetkazish</strong><small data-i18n="perk2sub">O‘zbekiston bo‘ylab</small></div></div><div class="perk"><div class="perk-icon"><svg class="icon"><use href="#i-phone"/></svg></div><div><strong data-i18n="perk3">Tez buyurtma</strong><small data-i18n="perk3sub">Savat kerak emas</small></div></div><div class="perk"><div class="perk-icon"><svg class="icon"><use href="#i-spark"/></svg></div><div><strong data-i18n="perk4">Aqlli texnologiya</strong><small data-i18n="perk4sub">Zamonaviy yechimlar</small></div></div></div></section>
     <section class="section section-cats" id="categories"><div class="container"><div class="section-top"><div><div class="section-tag"><span class="tag-line"></span><span data-i18n="catEyebrow">KATEGORIYALAR</span></div><h2 data-i18n="catTitle">O‘zingizga mosini tanlang</h2><p data-i18n="catDesc">Kamera, matras va kreslolar — hammasi bir katalogda.</p></div><a href="#catalog" class="inline-link"><span data-i18n="allProducts">Barcha mahsulotlar</span><svg class="icon"><use href="#i-arrow"/></svg></a></div><div class="categories-grid" id="categoryGrid"></div></div></section>
@@ -115,5 +137,6 @@
 <div id="successModal" class="modal" role="dialog" aria-modal="true" aria-label="Order success" hidden><div class="modal-shell success-shell"><button class="modal-x" data-close aria-label="Close"><svg class="icon"><use href="#i-close"/></svg></button><div class="success-mark"><svg class="icon"><use href="#i-check"/></svg></div><div class="section-tag"><span data-i18n="successTag">BUYURTMA QABUL QILINDI</span></div><h2 data-i18n="successTitle">Rahmat! Tez orada bog‘lanamiz.</h2><p id="successDetails"></p><button class="button button-primary full" data-close data-i18n="continueShop">Xaridni davom ettirish</button></div></div>
 <div id="editorModal" class="modal" role="dialog" aria-modal="true" aria-label="Admin editor" hidden><div class="modal-shell editor-shell"><button class="modal-x" data-close aria-label="Close"><svg class="icon"><use href="#i-close"/></svg></button><h2 id="editorTitle"></h2><form id="editorForm"></form></div></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="/app.js?v=20261122-prices7" defer></script>
+<script src="/app.js?v=20261122-3d8" defer></script>
+<script type="module" src="/camera-3d.js?v=20261122-3d8"></script>
 </body></html>

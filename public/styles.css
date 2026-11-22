@@ -138,3 +138,99 @@ body{font-size:15px}
  .product-price-line>.in-stock{font-size:10px}
  .product-badge.sale{padding:6px 8px;font-size:10px;max-width:125px}
 }
+
+/* YOU ME • Hero reimagined as an interactive three-eye robot camera.
+   Scope all changes to the hero; catalog / checkout / admin remain intact. */
+.hero-section{padding:20px 0 10px}
+.hero-robot-panel{
+  min-height:565px;grid-template-columns:49% 51%;border-radius:26px;
+  background:
+   radial-gradient(circle at 75% 40%,rgba(38,127,253,.31),transparent 43%),
+   radial-gradient(circle at 95% 90%,rgba(16,183,252,.34),transparent 35%),
+   linear-gradient(112deg,#061b3a 0%,#092a5b 54%,#0e5ba8 100%);
+  box-shadow:0 30px 65px rgba(10,39,95,.2);
+}
+.hero-robot-panel:before{opacity:.28}
+.hero-robot-panel .hero-left{padding:73px 8px 42px 58px;z-index:6}
+.hero-robot-panel .hero-mini{font-size:11px;letter-spacing:1.65px;background:rgba(10,80,155,.46);border-color:rgba(125,221,255,.36);color:#78deff}
+.hero-robot-panel h1{font-size:clamp(38px,4.15vw,64px);line-height:1.095;letter-spacing:-2.8px;white-space:normal;max-width:580px;margin:26px 0 20px;text-wrap:balance}
+.hero-robot-panel h1 .gradient-text{background:linear-gradient(93deg,#54cfff,#92e4ff 52%,#d1eeff);background-clip:text}
+.hero-robot-panel .hero-left>p{max-width:445px;color:#d4e4fc;font-size:16px;line-height:1.75;margin:0 0 26px}
+.hero-robot-panel .hero-buttons{flex-wrap:wrap;gap:12px}
+.hero-robot-panel .hero-buttons .button{font-size:13px;padding:14px 16px;min-height:51px;gap:9px}
+.hero-robot-panel .hero-buttons .button-glass .icon{width:17px;height:17px}
+.hero-smart-chips{margin-top:auto;padding-top:38px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hero-smart-chip{display:inline-flex;align-items:center;gap:8px;background:rgba(184,223,255,.11);border:1px solid rgba(166,220,255,.2);border-radius:12px;color:#e6f4ff;font-size:11px;white-space:nowrap;font-weight:750;padding:10px 11px;backdrop-filter:blur(5px)}
+.hero-smart-chip .icon{width:18px;height:18px;color:#68d3ff}
+.hero-robot-visual{min-height:565px;position:relative;isolation:isolate;overflow:visible}
+.hero-robot-visual:before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse at 56% 54%,rgba(0,161,255,.24),transparent 65%)}
+.hero-building{position:absolute;inset:16% -3% 9% 19%;opacity:.32;pointer-events:none;z-index:0;transform:skewY(-6deg);filter:blur(.25px)}
+.hero-building-wall{position:absolute;right:0;top:22%;width:100%;height:66%;border-left:3px solid rgba(119,192,255,.15);background:linear-gradient(150deg,#0b2445 0%,#0d365d 62%,#0c4072 100%);box-shadow:inset 0 15px 25px #03152e84}
+.hero-building-roof{position:absolute;top:12%;right:-2%;height:13%;width:111%;background:#061a35;transform:skewY(-5deg);border-top:4px solid #9fd7ff25}
+.hero-building-window{position:absolute;top:30%;height:38%;width:23%;background:linear-gradient(145deg,#f7b66185,#d1e9ff25);border:9px solid #06192e;box-shadow:0 0 30px #fbc07315}
+.hero-win-one{right:13%}.hero-win-two{right:44%}
+.hero-camera-halo{position:absolute;z-index:0;width:73%;aspect-ratio:1;border-radius:50%;border:1px solid #63caff58;box-shadow:0 0 70px rgba(0,173,255,.17),inset 0 0 80px rgba(0,128,255,.08);top:13%;left:13%;animation:hero-halo-pulse 6s ease-in-out infinite;pointer-events:none}
+.hero-ground-ring{position:absolute;bottom:7%;left:12%;width:83%;height:16%;z-index:2;pointer-events:none;border:3px solid rgba(57,202,255,.75);border-radius:50%;transform:perspective(350px) rotateX(64deg);box-shadow:0 0 20px rgba(51,215,255,.8),inset 0 0 24px rgba(42,162,255,.26);animation:hero-ring-glow 5s ease-in-out infinite}
+.hero-ground-ring.ring-two{bottom:3%;left:5%;width:96%;border-width:1px;opacity:.36;animation-delay:-1s}
+@keyframes hero-halo-pulse{0%,100%{opacity:.55;transform:scale(.97)}50%{opacity:1;transform:scale(1.035)}}
+@keyframes hero-ring-glow{0%,100%{opacity:.66;filter:drop-shadow(0 0 7px #36cbff)}50%{opacity:.97;filter:drop-shadow(0 0 15px #36cbff)}}
+.hero-camera-stage{position:absolute;z-index:4;inset:-2% -8% 0 -1%;cursor:grab;touch-action:pan-y;user-select:none}
+.hero-camera-stage:active{cursor:grabbing}
+.hero-camera-canvas{position:absolute;inset:0;display:block;width:100%;height:100%;z-index:2}
+.hero-camera-fallback{position:absolute;z-index:1;width:min(79%,470px);height:82%;object-fit:contain;top:8%;left:17%;filter:drop-shadow(0 28px 28px rgba(0,13,36,.6));transition:opacity .3s ease;animation:hero-fallback-float 6s ease-in-out infinite}
+.hero-camera-stage.is-3d-ready .hero-camera-fallback{opacity:0;pointer-events:none}
+@keyframes hero-fallback-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-13px)}}
+.hero-phone-demo{
+ position:absolute;z-index:3;bottom:16%;left:3%;width:110px;height:216px;pointer-events:none;
+ border:4px solid #0b1c34;border-radius:21px;background:#06172d;
+ transform:rotate(-9deg);box-shadow:9px 20px 29px rgba(0,6,22,.45),inset 0 0 0 2px #abc7df;
+ overflow:hidden;animation:hero-fallback-float 7s ease-in-out infinite -2s
+}
+.hero-phone-camera{height:8px;width:34px;margin:5px auto 2px;border-radius:15px;background:#02101e}
+.hero-phone-head{color:#fff;display:flex;align-items:center;justify-content:space-between;font-size:10px;padding:7px 6px 10px}
+.hero-phone-head span{color:#ff5353;font-size:8px}
+.hero-phone-view{height:119px;overflow:hidden;position:relative;background:linear-gradient(180deg,#87c3ff 0%,#b2d5e8 54%,#497b71 55%,#224b43 100%)}
+.hero-phone-house{position:absolute;bottom:30px;left:12px;width:80px;height:57px;background:#eff8ff;box-shadow:0 -4px 0 #2d536f}
+.hero-phone-house:before{content:"";position:absolute;left:-10px;top:-17px;border-left:50px solid transparent;border-right:50px solid transparent;border-bottom:21px solid #244765}
+.hero-phone-house i{position:absolute;width:18px;height:21px;top:16px;background:#356c9e}.hero-phone-house i:first-child{left:10px}.hero-phone-house i:last-child{right:9px}
+.hero-phone-lawn{position:absolute;bottom:0;height:30px;left:0;right:0;background:#37694d}
+.hero-phone-control{display:flex;align-items:center;justify-content:space-around;color:#b3d6f8;padding-top:13px;font-size:16px}
+.hero-3d-caption{position:absolute;z-index:5;right:14px;bottom:15px;display:flex;gap:8px;align-items:center;padding:9px 11px;border:1px solid #7ed9ff40;border-radius:20px;background:#072a58b8;color:#d7f6ff;font-size:10px;font-weight:700;pointer-events:none;backdrop-filter:blur(7px)}
+.hero-live-dot{display:inline-block;width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:#56f6d9;box-shadow:0 0 10px #56f6d9}
+@media(max-width:1100px){
+ .hero-robot-panel{grid-template-columns:49% 51%}
+ .hero-robot-panel .hero-left{padding:58px 8px 40px 35px}
+ .hero-robot-panel h1{font-size:clamp(35px,4.6vw,53px)}
+ .hero-smart-chips{gap:7px}
+ .hero-smart-chip{padding:8px 9px;font-size:10px}
+ .hero-phone-demo{left:-2%;transform:rotate(-9deg) scale(.8)}
+}
+@media(max-width:750px){
+ .hero-robot-panel{display:flex;flex-direction:column;min-height:0;border-radius:20px}
+ .hero-robot-panel .hero-left{padding:35px 24px 10px;flex:none}
+ .hero-robot-panel h1{font-size:clamp(32px,7.3vw,47px);letter-spacing:-1.5px;line-height:1.13;white-space:normal;margin:19px 0 13px}
+ .hero-robot-panel .hero-left>p{font-size:13px;line-height:1.65;margin-bottom:18px}
+ .hero-robot-panel .hero-buttons .button{font-size:11px;min-height:44px;padding:11px 12px}
+ .hero-smart-chips{padding-top:19px}
+ .hero-smart-chip{font-size:9px}
+ .hero-robot-visual{min-height:345px;max-height:none;height:345px;flex:0 0 345px}
+ .hero-camera-stage{inset:-4% -4% -2% -4%}
+ .hero-phone-demo{display:none}
+ .hero-building{inset:10% -3% 0 22%}
+ .hero-ground-ring{bottom:2%;height:17%}
+ .hero-ground-ring.ring-two{bottom:-1%}
+ .hero-3d-caption{font-size:9px;right:12px;bottom:10px}
+}
+@media(max-width:420px){
+ .hero-robot-panel .hero-left{padding:29px 20px 0}
+ .hero-robot-panel h1{font-size:34px}
+ .hero-robot-panel .hero-left>p{font-size:12px}
+ .hero-smart-chips{gap:7px}
+ .hero-smart-chip{font-size:9px;padding:8px}
+ .hero-smart-chip .icon{width:14px;height:14px}
+ .hero-robot-visual{height:310px;min-height:310px;flex-basis:310px}
+ .hero-3d-caption{font-size:8px;bottom:7px;right:8px}
+}
+@media(prefers-reduced-motion:reduce){
+ .hero-camera-halo,.hero-ground-ring,.hero-phone-demo,.hero-camera-fallback{animation:none!important}
+}

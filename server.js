@@ -130,6 +130,16 @@ CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at);
       if(!columns.some(c=>c.name===column))await db.exec("ALTER TABLE orders ADD COLUMN "+column+" TEXT NOT NULL DEFAULT ''");
     }
   }
+  // Scheduled discounts live separately: original product price stays untouched.
+  // Dates are normalized UTC ISO strings; valid in both Neon PG and SQLite.
+  await db.exec(`
+CREATE TABLE IF NOT EXISTS promotions (
+  product_id INTEGER PRIMARY KEY REFERENCES products(id) ON DELETE CASCADE,
+  sale_price INTEGER NOT NULL,
+  starts_at TEXT NOT NULL,
+  ends_at TEXT NOT NULL
+);
+`);
   await seed();
   await db.exec('CREATE TABLE IF NOT EXISTS app_migrations (key TEXT PRIMARY KEY)');
   // Upgrade older YOU ME databases without modifying saved admin prices or image uploads.
@@ -209,8 +219,24 @@ async function bodyJSON(req,max=4_500_000) {
 }
 function clean(v,n=300){return String(v??'').trim().slice(0,n);}
 function number(v,def=0){const n=Number(v);return Number.isSafeInteger(n)?n:def;}
-function productView(p){
-  return {...p,has_blob:undefined,image_url:p.has_blob?`/api/products/${p.id}/image?v=${encodeURIComponent(p.updated_at)}`:p.image_url};
+function promotionActive(product,promo,now=Date.now()){
+  if(!promo || Number(promo.sale_price)<=0 || Number(promo.sale_price)>=Number(product.price))return false;
+  const starts=Date.parse(promo.starts_at),ends=Date.parse(promo.ends_at);
+  return Number.isFinite(starts)&&Number.isFinite(ends)&&starts<=now&&now<ends;
+}
+function effectiveProduct(product,promo){
+  if(!promotionActive(product,promo))return {...product,sale_ends_at:null};
+  return {...product,old_price:Number(product.price),price:Number(promo.sale_price),sale_ends_at:promo.ends_at};
+}
+function productView(p,promo=null){
+  const x=effectiveProduct(p,promo);
+  return {...x,has_blob:undefined,image_url:p.has_blob?`/api/products/${p.id}/image?v=${encodeURIComponent(p.updated_at)}`:p.image_url};
+}
+function promotionTime(v){
+  const s=clean(v,64);
+  if(!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?Z$/.test(s))return null;
+  const d=Date.parse(s);
+  return Number.isFinite(d)?new Date(d).toISOString():null;
 }
 function isValidUrl(v){return !v || /^https:\/\/[^\s<>]+$/i.test(v) || /^\/assets\/[a-z0-9_.-]+\.(svg|png|jpe?g|webp)$/i.test(v);}
 function handleImage(data) {
@@ -278,7 +304,13 @@ async function route(req,res){
     if(method==='GET'&&p==='/api/health')return json(res,200,{ok:true});
     if(method==='GET'&&p==='/api/config')return json(res,200,{telegram_configured:Boolean(BOT_TOKEN&&CHAT_ID),demo_mode:!PRODUCTION});
     if(method==='GET'&&p==='/api/categories')return json(res,200,{categories:await catsQuery.all()});
-    if(method==='GET'&&p==='/api/products')return json(res,200,{products:(await publicProductsQuery.all()).map(productView)});
+    if(method==='GET'&&p==='/api/products'){
+      const [products,promotions]=await Promise.all([
+        publicProductsQuery.all(),db.prepare('SELECT * FROM promotions').all()
+      ]);
+      const promoMap=new Map(promotions.map(row=>[Number(row.product_id),row]));
+      return json(res,200,{products:products.map(product=>productView(product,promoMap.get(Number(product.id))))});
+    }
     const img=p.match(/^\/api\/products\/(\d+)\/image$/);
     if(method==='GET'&&img){const x=await db.prepare('SELECT image_blob,image_mime FROM products WHERE id=?').get(Number(img[1]));if(!x||!x.image_blob)return json(res,404,{error:'not_found'});res.writeHead(200,{'Content-Type':x.image_mime,'Cache-Control':'public, max-age=86400','X-Content-Type-Options':'nosniff'});return res.end(x.image_blob);}
     if(method==='POST'&&p==='/api/orders'){
@@ -290,14 +322,17 @@ async function route(req,res){
       const selectedRegion=locations.regions.find(r=>r.id===number(v.region_id));
       const selectedDistrict=locations.districts.find(d=>d.id===number(v.district_id)&&d.region_id===selectedRegion?.id);
       const prod=await db.prepare('SELECT id,name_uz,price,old_price,active,stock FROM products WHERE id=?').get(id);
+      const activePromotion=prod?await db.prepare('SELECT * FROM promotions WHERE product_id=?').get(id):null;
+      const currentPrice=prod?effectiveProduct(prod,activePromotion).price:0;
       const digits=phone.replace(/\D/g,''),extraDigits=extraPhone.replace(/\D/g,'');
       if(!prod||!prod.active||prod.price<=0||(prod.old_price>0&&prod.old_price<=prod.price)||prod.stock<qty||qty<1||qty>20||name.length<3||
         digits.length<9||digits.length>15||(extraPhone&&(extraDigits.length<9||extraDigits.length>15))||
         !selectedRegion||!selectedDistrict)return json(res,400,{error:'invalid_order'});
+      if(v.expected_unit_price!==undefined && Number(v.expected_unit_price)!==Number(currentPrice))return json(res,409,{error:'price_changed'});
       const region=selectedRegion.uz,district=selectedDistrict.uz;
-      const total=prod.price*qty;
+      const total=currentPrice*qty;
       const r=await db.prepare('INSERT INTO orders (product_id,product_name,quantity,unit_price,total,customer_name,phone,address,region,district,extra_phone,notes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')
-        .run(id,prod.name_uz,qty,prod.price,total,name,phone,street,region,district,extraPhone,notes);
+        .run(id,prod.name_uz,qty,currentPrice,total,name,phone,street,region,district,extraPhone,notes);
       const order={id:Number(r.lastInsertRowid),product_name:prod.name_uz,quantity:qty,unit_price:prod.price,total,customer_name:name,phone,extra_phone:extraPhone,region,district,address:street,notes};
       const sent=await notifyTelegram(order);
       if(sent)await db.prepare('UPDATE orders SET telegram_sent=1 WHERE id=?').run(order.id);
@@ -328,7 +363,35 @@ async function route(req,res){
       const stats={products:(await db.prepare('SELECT COUNT(*) AS n FROM products').get()).n,categories:(await db.prepare('SELECT COUNT(*) AS n FROM categories').get()).n,orders:(await db.prepare('SELECT COUNT(*) AS n FROM orders').get()).n,new_orders:(await db.prepare("SELECT COUNT(*) AS n FROM orders WHERE status='new'").get()).n,total_sales:(await db.prepare("SELECT COALESCE(SUM(total),0) AS n FROM orders WHERE status IN ('accepted','shipped','done')").get()).n};
       return json(res,200,{stats});
     }
-    if(method==='GET'&&p==='/api/admin/products')return json(res,200,{products:(await allProductsQuery.all()).map(productView)});
+    if(method==='GET'&&p==='/api/admin/products')return json(res,200,{products:(await allProductsQuery.all()).map(product=>productView(product))});
+    if(method==='GET'&&p==='/api/admin/promotions'){
+      const offers=await db.prepare(`SELECT m.product_id,m.sale_price,m.starts_at,m.ends_at,
+        p.name_uz,p.name_ru,p.price AS regular_price,p.stock,p.active
+        FROM promotions m JOIN products p ON p.id=m.product_id ORDER BY m.ends_at DESC`).all();
+      return json(res,200,{promotions:offers,server_now:new Date().toISOString()});
+    }
+    if(method==='POST'&&p==='/api/admin/promotions'){
+      const input=await bodyJSON(req,16000);
+      const id=number(input.product_id),salePrice=number(input.sale_price,-1);
+      const start=promotionTime(input.starts_at),end=promotionTime(input.ends_at);
+      const base=await db.prepare('SELECT id,price FROM products WHERE id=?').get(id);
+      const now=Date.now();
+      if(!base||!start||!end||salePrice<=0||salePrice>=Number(base.price)||
+        Date.parse(start)>=Date.parse(end)||Date.parse(end)<=now||
+        Date.parse(end)-Date.parse(start)>366*86400000){
+        return json(res,400,{error:'invalid_promotion'});
+      }
+      await db.prepare(`INSERT INTO promotions(product_id,sale_price,starts_at,ends_at)
+        VALUES(?,?,?,?) ON CONFLICT(product_id) DO UPDATE SET
+        sale_price=excluded.sale_price, starts_at=excluded.starts_at, ends_at=excluded.ends_at`)
+        .run(id,salePrice,start,end);
+      return json(res,200,{ok:true});
+    }
+    const promoMatch=p.match(/^\/api\/admin\/promotions\/(\d+)$/);
+    if(method==='DELETE'&&promoMatch){
+      const result=await db.prepare('DELETE FROM promotions WHERE product_id=?').run(Number(promoMatch[1]));
+      return json(res,result.changes?200:404,{ok:Boolean(result.changes)});
+    }
     if(method==='GET'&&p==='/api/admin/orders')return json(res,200,{orders:await db.prepare('SELECT * FROM orders ORDER BY id DESC LIMIT 500').all()});
     const categoryMatch=p.match(/^\/api\/admin\/categories(?:\/(\d+))?$/);
     if(categoryMatch){const id=categoryMatch[1]?Number(categoryMatch[1]):null;

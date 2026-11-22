@@ -83,7 +83,7 @@
    bump(x,y,323,510,58,57,.035)+bump(x,y,625,520,63,66,.035)+
    bump(x,y,925,510,58,57,.035)+bump(x,y,625,739,215,107,.12);
   const bottomDepth=(x,y)=>.30+
-    bump(x,y,624,994,252,270,.14)+bump(x,y,622,949,76,76,.030);
+    bump(x,y,624,994,252,270,.14)+bump(x,y,622,949,76,76,.025);
   // The leading/front surface is CURVED THREE DIMENSIONAL geometry, not a flat plane.
   // Its transparency keeps the real camera outline; dark background never enters mesh.
   function buildPart(group,start,end,relativeY,zFn,sideMat){
@@ -106,11 +106,23 @@
     face.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
     face.setIndex(idx);face.computeVertexNormals();
     group.add(new THREE.Mesh(face,photoMaterial));
-    // Genuine 3D side wall: follow true alpha contour at each 6-pixel scan line.
+    // Volumetric side geometry: a curved cross-section, not a straight
+    // photo-thin wall. At the rear the housing tapers into rounded domes.
     const wall=[];
     const quad=(a,b,c,d)=>wall.push(...a,...b,...c,...b,...d,...c);
     let prev=null;
-    const step=6;
+    const step=6,layers=10;
+    const rearZ=group===upper?-1.18:-1.07;
+    function sidePoint(x,y,t,left){
+      const front=px(x),outward=left?-1:1;
+      const recess=(left?1:-1)*.17*t;
+      const convex=outward*.085*Math.sin(Math.PI*t);
+      return [
+        front+recess+convex,
+        py(y)-relativeY,
+        zFn(x,y)+(rearZ-zFn(x,y))*t
+      ];
+    }
     for(let y=start;y<=end;y+=step){
       let left=w,right=-1;
       for(let x=0;x<w;x+=3){
@@ -118,12 +130,13 @@
       }
       if(right-left<24){prev=null;continue;}
       const now={
-        l:[px(left),py(y)-relativeY,zFn(left,y)],
-        r:[px(right),py(y)-relativeY,zFn(right,y)],
-        bl:[px(left),py(y)-relativeY,-.35],
-        br:[px(right),py(y)-relativeY,-.35]
+        l:Array.from({length:layers+1},(_,i)=>sidePoint(left,y,i/layers,true)),
+        r:Array.from({length:layers+1},(_,i)=>sidePoint(right,y,i/layers,false))
       };
-      if(prev){quad(prev.l,now.l,prev.bl,now.bl);quad(prev.r,prev.br,now.r,now.br);}
+      if(prev)for(let k=0;k<layers;k++){
+        quad(prev.l[k],now.l[k],prev.l[k+1],now.l[k+1]);
+        quad(prev.r[k],prev.r[k+1],now.r[k],now.r[k+1]);
+      }
       prev=now;
     }
     if(wall.length){
@@ -149,14 +162,79 @@
     cylinder(.084,.10,graphite,upper,x,hi-.045,-.02);
     for(let i=0;i<3;i++)cylinder(.077,.025,antennaMat,upper,x,lo+.28+i*.12,-.02);
   }
-  // Rear chassis stays smaller than photo silhouette (no protruding black blob).
-  const back=new THREE.Mesh(new THREE.BoxGeometry(2.5,.45,.25),graphite);
-  back.position.set(0,py(533),-.35);upper.add(back);
-  const collar=new THREE.Mesh(new THREE.CylinderGeometry(.70,.70,.40,48),cast);
-  collar.position.set(0,py(744),-.50);upper.add(collar);
-  const lowerBack=new THREE.Mesh(new THREE.SphereGeometry(1,38,28),graphite);
-  lowerBack.scale.set(.55,.69,.16);
-  lowerBack.position.set(0,py(1020)-jointPos,-.58);ptz.add(lowerBack);
+  // Side profile based on the actual customer's photo (4G PTZ model).
+  // Upper lens pods are hemispherical and deep, not rectangular or flat.
+  const polished=new THREE.MeshPhysicalMaterial({
+    color:0x373d48,metalness:.69,roughness:.24,clearcoat:.78,clearcoatRoughness:.15
+  });
+  const molded=new THREE.MeshPhysicalMaterial({
+    color:0x11161e,metalness:.36,roughness:.29,clearcoat:.63,clearcoatRoughness:.18
+  });
+  const edgeMetal=new THREE.MeshStandardMaterial({color:0x69727f,metalness:.86,roughness:.24});
+  const seam=new THREE.MeshStandardMaterial({color:0x06080c,metalness:.16,roughness:.44});
+  function ellipsoid(parent,x,y,z,rx,ry,rz,mat){
+    const shape=new THREE.Mesh(new THREE.SphereGeometry(1,48,32),mat);
+    shape.position.set(x,y,z);shape.scale.set(rx,ry,rz);
+    parent.add(shape);return shape;
+  }
+  function ring(parent,x,y,z,r,t,mat){
+    const o=new THREE.Mesh(new THREE.TorusGeometry(r,t,12,64),mat);
+    o.position.set(x,y,z);parent.add(o);return o;
+  }
+  function roundSide(parent,x,y,z,r,depth,mat,normal){
+    const o=new THREE.Mesh(new THREE.CylinderGeometry(r,r,depth,64),mat);
+    o.position.set(x,y,z);o.rotation.z=Math.PI/2;
+    parent.add(o);return o;
+  }
+  const headY=py(522);
+  // The silver upper tubular chassis flows into black spherical end-pods.
+  ellipsoid(upper,0,headY,-.65,1.43,.54,.75,edgeMetal);
+  for(const sx of [-1,1]){
+    const x=sx*1.12;
+    ellipsoid(upper,x,headY,-.69,.61,.54,.77,polished);
+    ellipsoid(upper,x,headY,-.45,.51,.47,.49,molded);
+    // Thin metallic seam behind, never an extra protruding front lens.
+    ring(upper,x,headY,-.10,.465,.027,edgeMetal);
+    // Small inset seam at upper rear junction.
+    const sideSeam=ellipsoid(upper,x,headY,-1.26,.47,.43,.12,seam);
+  }
+  // Smooth centre body and real cylindrical silver motor collar.
+  ellipsoid(upper,0,headY,-.56,.73,.50,.70,edgeMetal);
+  const swivelY=py(745);
+  const collar=new THREE.Mesh(
+    new THREE.CylinderGeometry(.80,.82,.41,64),
+    new THREE.MeshStandardMaterial({color:0x808a96,metalness:.88,roughness:.25})
+  );
+  collar.position.set(0,swivelY,-.65);
+  upper.add(collar);
+  for(const offset of [-.197,.202]){
+    const rim=new THREE.Mesh(new THREE.CylinderGeometry(.83,.83,.035,64),edgeMetal);
+    rim.position.set(0,swivelY+offset,-.65);upper.add(rim);
+  }
+  // Body of the black lower PTZ head, rounded deeply toward its rear.
+  const sideY=py(1015)-jointPos;
+  ellipsoid(ptz,0,sideY,-.62,.69,.84,.75,molded);
+  for(const sx of [-1,1]){
+    ellipsoid(ptz,sx*.55,sideY,-.52,.31,.60,.56,polished);
+    // Customer photo shows a large round disk on BOTH sides of lower PTZ.
+    roundSide(ptz,sx*.73,sideY,-.40,.37,.18,molded,sx);
+    roundSide(ptz,sx*.85,sideY,-.40,.305,.04,edgeMetal,sx);
+    roundSide(ptz,sx*.88,sideY,-.40,.258,.052,molded,sx);
+    roundSide(ptz,sx*.913,sideY,-.40,.13,.025,seam,sx);
+  }
+  // The real camera has a rear articulated wall bracket.
+  // Keep the structure strictly behind the optical housing.
+  const arm=new THREE.Mesh(new THREE.BoxGeometry(.24,.20,.69),edgeMetal);
+  arm.position.set(0,headY,-1.42);upper.add(arm);
+  const mount=new THREE.Mesh(new THREE.BoxGeometry(.62,.79,.12),polished);
+  mount.position.set(0,headY,-1.78);upper.add(mount);
+  const screwHole=new THREE.MeshStandardMaterial({color:0x070a10,roughness:.65});
+  for(const dy of [-.25,.25]){
+    const bolt=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,.025,24),screwHole);
+    bolt.position.set(0,headY+dy,-1.70);bolt.rotation.x=Math.PI/2;upper.add(bolt);
+  }
+  // Only geometry and plain materials are derived from the side reference:
+  // its IMEI, QR label and account credentials are not uploaded or reproduced.
   // Independent lens glass, real thickness and specular highlights.
   function lens(group,xp,yp,offset,depth,r){
     const x=px(xp),y=py(yp)-offset,z=depth(xp,yp)+.032;
@@ -168,7 +246,7 @@
   }
   // Natural lens glass is already present in the original photo map.
   // Do not overlay 3D spheres or rings: those looked like protruding fake eyes.
-  let ww=0,hh=0,visible=true,queued=false,last=0,drag=false,lastX=0,yaw=.06,targetYaw=.06,pitch=0,targetPitch=0;
+  let ww=0,hh=0,visible=true,queued=false,last=0,drag=false,lastX=0,yaw=.13,targetYaw=.13,pitch=0,targetPitch=0;
   function resize(){
     const b=stage.getBoundingClientRect();
     const width=Math.max(2,Math.round(b.width)),height=Math.max(2,Math.round(b.height));
@@ -200,17 +278,17 @@
     drag=true;lastX=e.clientX;stage.setPointerCapture?.(e.pointerId);
   });
   stage.addEventListener('pointermove',e=>{
-    if(drag){targetYaw=Math.max(-.58,Math.min(.58,targetYaw+(e.clientX-lastX)*.005));lastX=e.clientX;}
+    if(drag){targetYaw=Math.max(-1.03,Math.min(1.03,targetYaw+(e.clientX-lastX)*.006));lastX=e.clientX;}
     else if(e.pointerType==='mouse'){
       const b=stage.getBoundingClientRect();
-      targetYaw=Math.max(-.40,Math.min(.40,(e.clientX-b.left-b.width/2)/b.width*.76));
+      targetYaw=Math.max(-.58,Math.min(.58,(e.clientX-b.left-b.width/2)/b.width*1.12));
       targetPitch=Math.max(-.055,Math.min(.055,-(e.clientY-b.top-b.height/2)/b.height*.10));
     }
     if(reduced)requestFrame();
   });
   stage.addEventListener('pointerup',()=>drag=false);
   stage.addEventListener('pointercancel',()=>drag=false);
-  stage.addEventListener('pointerleave',()=>{if(!drag){targetYaw=.06;targetPitch=0;}});
+  stage.addEventListener('pointerleave',()=>{if(!drag){targetYaw=.13;targetPitch=0;}});
   if('ResizeObserver'in window)new ResizeObserver(()=>{resize();requestFrame();}).observe(stage);
   if('IntersectionObserver'in window)new IntersectionObserver(entries=>{
     visible=Boolean(entries[0]?.isIntersecting);if(visible)requestFrame();

@@ -433,3 +433,10 @@ body{font-size:15px}
  .hero-robot-panel .v380-ptz-panel{height:42px}
  .hero-robot-panel .v380-bottom-toolbar{height:21px}
 }
+
+/* v15: match the real 4G PTZ camera's round side housings instead of a flat plate. */
+.hero-robot-panel .hero-camera-stage{inset:-1% -11% -2% 4%}
+.hero-robot-panel .hero-camera-canvas{filter:drop-shadow(0 19px 17px rgba(0,15,35,.28))}
+@media(max-width:750px){
+ .hero-robot-panel .hero-camera-stage{inset:-1% -12% -2% 5%}
+}
